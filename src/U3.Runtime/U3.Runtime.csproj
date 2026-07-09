@@ -7,7 +7,60 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);UNITY_STANDALONE;UNITY_STANDALONE_LINUX;UNITY_2022_3;SERVER</DefineConstants>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/ArrayEx.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/ArrayEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/ByteDisplay.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/ByteDisplay.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/ConvertEx.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/ConvertEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/DateTimeEx.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/DateTimeEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/DictionaryEx.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/DictionaryEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/DirectoryInfoEx.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/DirectoryInfoEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/EnumerableEx.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/EnumerableEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/FileInfoEx.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/FileInfoEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/GuidEx.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/GuidEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/HashSetEx.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/HashSetEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/IPv4Address.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/IPv4Address.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/IPv4Filter.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/IPv4Filter.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/IPv4SubnetMask.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/IPv4SubnetMask.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/ListEx.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/ListEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/PathEx.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/PathEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/StringEx.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/StringEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SystemEx/TypeEx.cs" Link="External/U3-SDK/Assets/Runtime/SystemEx/TypeEx.cs" />
+
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatComment.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatComment.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatDictionary.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatDictionary.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatDictionaryEx.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatDictionaryEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatDictionaryWithMetadata.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatDictionaryWithMetadata.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatList.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatList.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatListEx.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatListEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatListValueEnumerator.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatListValueEnumerator.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatListWithMetadata.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatListWithMetadata.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatNode.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatNode.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatNodeEx.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatNodeEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatNodeWithMetadata.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatNodeWithMetadata.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatParseable.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatParseable.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatParser.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatParser.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatTokenizer.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatTokenizer.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatValue.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatValue.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatValueEx.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatValueEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatValueWithMetadata.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatValueWithMetadata.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/DatWriter.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/DatWriter.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/EditableDatDictionary.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/EditableDatDictionary.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/EditableDatList.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/EditableDatList.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/EditableDatNode.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/EditableDatNode.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/EditableDatValue.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/EditableDatValue.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/IDatSerializable.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/IDatSerializable.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnturnedDat/MetadataPreservingDatWriter.cs" Link="External/U3-SDK/Assets/Runtime/UnturnedDat/MetadataPreservingDatWriter.cs" />
+
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SDG.NetPak/NetEnumAttribute.cs" Link="External/U3-SDK/Assets/Runtime/SDG.NetPak/NetEnumAttribute.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SDG.NetPak/NetMaxValue.cs" Link="External/U3-SDK/Assets/Runtime/SDG.NetPak/NetMaxValue.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SDG.NetPak/NetPakConst.cs" Link="External/U3-SDK/Assets/Runtime/SDG.NetPak/NetPakConst.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SDG.NetPak/NetPakReader.cs" Link="External/U3-SDK/Assets/Runtime/SDG.NetPak/NetPakReader.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SDG.NetPak/NetPakWriter.cs" Link="External/U3-SDK/Assets/Runtime/SDG.NetPak/NetPakWriter.cs" />
+  </ItemGroup>
 </Project>
