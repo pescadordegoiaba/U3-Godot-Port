@@ -1,6 +1,7 @@
 using SDG.NetPak;
 using SDG.Unturned;
 using Unturned.SystemEx;
+using UnityEngine;
 using Xunit;
 
 namespace U3.Port.Tests;
@@ -143,6 +144,114 @@ public class U3RuntimeSmokeTests
     }
 
     [Fact]
+    public void UnityNetPakRoundTripsQuaternion()
+    {
+        var buffer = new byte[64];
+        var writer = new NetPakWriter { buffer = buffer };
+        var rotation = Quaternion.Euler(0f, 90f, 0f);
+
+        Assert.True(writer.WriteQuaternion(rotation));
+        Assert.True(writer.Flush());
+
+        var reader = new NetPakReader();
+        reader.SetBufferSegment(buffer, writer.writeByteIndex);
+
+        Assert.True(reader.ReadQuaternion(out var result));
+        AssertVector3Approx(rotation * Vector3.forward, result * Vector3.forward, 0.01f);
+    }
+
+    [Fact]
+    public void UnityNetPakRoundTripsNormalVector3()
+    {
+        var buffer = new byte[64];
+        var writer = new NetPakWriter { buffer = buffer };
+        var normal = new Vector3(1f, 1f, 1f).normalized;
+
+        Assert.True(writer.WriteNormalVector3(normal));
+        Assert.True(writer.Flush());
+
+        var reader = new NetPakReader();
+        reader.SetBufferSegment(buffer, writer.writeByteIndex);
+
+        Assert.True(reader.ReadNormalVector3(out var result));
+        AssertVector3Approx(normal, result, 0.01f);
+    }
+
+    [Fact]
+    public void UnityNetPakRoundTripsClampedVector3()
+    {
+        var buffer = new byte[64];
+        var writer = new NetPakWriter { buffer = buffer };
+        var value = new Vector3(12.25f, -3.5f, 0.75f);
+
+        Assert.True(writer.WriteClampedVector3(value, intBitCount: 8, fracBitCount: 2));
+        Assert.True(writer.Flush());
+
+        var reader = new NetPakReader();
+        reader.SetBufferSegment(buffer, writer.writeByteIndex);
+
+        Assert.True(reader.ReadClampedVector3(out var result, intBitCount: 8, fracBitCount: 2));
+        AssertVector3Approx(value, result, 0.001f);
+    }
+
+    [Fact]
+    public void UnityNetPakRoundTripsColor32Rgba()
+    {
+        var buffer = new byte[64];
+        var writer = new NetPakWriter { buffer = buffer };
+        var color = new Color32(10, 20, 30, 40);
+
+        Assert.True(writer.WriteColor32RGBA(color));
+        Assert.True(writer.Flush());
+
+        var reader = new NetPakReader();
+        reader.SetBufferSegment(buffer, writer.writeByteIndex);
+
+        Assert.True(reader.ReadColor32RGBA(out Color32 result));
+        Assert.Equal(color.r, result.r);
+        Assert.Equal(color.g, result.g);
+        Assert.Equal(color.b, result.b);
+        Assert.Equal(color.a, result.a);
+    }
+
+    [Fact]
+    public void UnityNetPakRoundTripsColor32RgbAsColor()
+    {
+        var buffer = new byte[64];
+        var writer = new NetPakWriter { buffer = buffer };
+        var color = new Color32(10, 20, 30, 255);
+
+        Assert.True(writer.WriteColor32RGB(color));
+        Assert.True(writer.Flush());
+
+        var reader = new NetPakReader();
+        reader.SetBufferSegment(buffer, writer.writeByteIndex);
+
+        Assert.True(reader.ReadColor32RGB(out Color result));
+        Assert.Equal(10f / 255f, result.r, 0.0001f);
+        Assert.Equal(20f / 255f, result.g, 0.0001f);
+        Assert.Equal(30f / 255f, result.b, 0.0001f);
+        Assert.Equal(1f, result.a);
+    }
+
+    [Fact]
+    public void UnityNetPakRoundTripsNormalVector3AsYaw()
+    {
+        var buffer = new byte[64];
+        var writer = new NetPakWriter { buffer = buffer };
+        var normal = new Vector3(1f, 0f, 1f).normalized;
+
+        Assert.True(writer.WriteNormalVector3AsYaw(normal));
+        Assert.True(writer.Flush());
+
+        var reader = new NetPakReader();
+        reader.SetBufferSegment(buffer, writer.writeByteIndex);
+
+        Assert.True(reader.ReadNormalVector3AsYaw(out var result));
+        AssertVector3Approx(normal, result, 0.001f);
+    }
+
+    [Fact]
     public void SystemExStringHelpersWork()
     {
         var text = "alpha\nbeta\n";
@@ -172,5 +281,12 @@ public class U3RuntimeSmokeTests
     public void SystemExByteDisplayFormatsBase10()
     {
         Assert.Equal("1.5 kB", ByteDisplay.Base10ToString(1500));
+    }
+
+    private static void AssertVector3Approx(Vector3 expected, Vector3 actual, float tolerance)
+    {
+        Assert.True(MathF.Abs(expected.x - actual.x) <= tolerance, $"Expected x {expected.x}, got {actual.x}");
+        Assert.True(MathF.Abs(expected.y - actual.y) <= tolerance, $"Expected y {expected.y}, got {actual.y}");
+        Assert.True(MathF.Abs(expected.z - actual.z) <= tolerance, $"Expected z {expected.z}, got {actual.z}");
     }
 }

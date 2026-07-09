@@ -15,6 +15,53 @@ public struct Vector2
 
     public static Vector2 one => new(1f, 1f);
 
+    public readonly float sqrMagnitude => (x * x) + (y * y);
+
+    public readonly float magnitude => MathF.Sqrt(sqrMagnitude);
+
+    public readonly Vector2 normalized
+    {
+        get
+        {
+            var currentMagnitude = magnitude;
+            return currentMagnitude > 1E-06f ? this / currentMagnitude : zero;
+        }
+    }
+
+    public float this[int index]
+    {
+        readonly get
+        {
+            return index switch
+            {
+                0 => x,
+                1 => y,
+                _ => throw new IndexOutOfRangeException("Invalid Vector2 index.")
+            };
+        }
+        set
+        {
+            switch (index)
+            {
+                case 0:
+                    x = value;
+                    break;
+                case 1:
+                    y = value;
+                    break;
+                default:
+                    throw new IndexOutOfRangeException("Invalid Vector2 index.");
+            }
+        }
+    }
+
+    public void Normalize()
+    {
+        var normalizedValue = normalized;
+        x = normalizedValue.x;
+        y = normalizedValue.y;
+    }
+
     public static Vector2 operator +(Vector2 left, Vector2 right)
     {
         return new Vector2(left.x + right.x, left.y + right.y);
@@ -43,6 +90,16 @@ public struct Vector2
     public static Vector2 operator /(Vector2 value, float scalar)
     {
         return new Vector2(value.x / scalar, value.y / scalar);
+    }
+
+    public static float Distance(Vector2 left, Vector2 right)
+    {
+        return (left - right).magnitude;
+    }
+
+    public static float Dot(Vector2 left, Vector2 right)
+    {
+        return (left.x * right.x) + (left.y * right.y);
     }
 }
 
@@ -85,6 +142,37 @@ public struct Vector3
         {
             var currentMagnitude = magnitude;
             return currentMagnitude > 1E-06f ? this / currentMagnitude : zero;
+        }
+    }
+
+    public float this[int index]
+    {
+        readonly get
+        {
+            return index switch
+            {
+                0 => x,
+                1 => y,
+                2 => z,
+                _ => throw new IndexOutOfRangeException("Invalid Vector3 index.")
+            };
+        }
+        set
+        {
+            switch (index)
+            {
+                case 0:
+                    x = value;
+                    break;
+                case 1:
+                    y = value;
+                    break;
+                case 2:
+                    z = value;
+                    break;
+                default:
+                    throw new IndexOutOfRangeException("Invalid Vector3 index.");
+            }
         }
     }
 
@@ -186,6 +274,41 @@ public struct Quaternion
     public static Quaternion identity => new(0f, 0f, 0f, 1f);
 
     public readonly Quaternion normalized => Normalize(this);
+
+    public float this[int index]
+    {
+        readonly get
+        {
+            return index switch
+            {
+                0 => x,
+                1 => y,
+                2 => z,
+                3 => w,
+                _ => throw new IndexOutOfRangeException("Invalid Quaternion index.")
+            };
+        }
+        set
+        {
+            switch (index)
+            {
+                case 0:
+                    x = value;
+                    break;
+                case 1:
+                    y = value;
+                    break;
+                case 2:
+                    z = value;
+                    break;
+                case 3:
+                    w = value;
+                    break;
+                default:
+                    throw new IndexOutOfRangeException("Invalid Quaternion index.");
+            }
+        }
+    }
 
     public readonly Vector3 eulerAngles
     {
@@ -394,6 +517,43 @@ public struct Color
     public static Color clear => new(0f, 0f, 0f, 0f);
 }
 
+public struct Color32
+{
+    public byte r;
+    public byte g;
+    public byte b;
+    public byte a;
+
+    public Color32(byte r, byte g, byte b, byte a)
+    {
+        this.r = r;
+        this.g = g;
+        this.b = b;
+        this.a = a;
+    }
+
+    public static implicit operator Color(Color32 value)
+    {
+        const float scale = 1f / byte.MaxValue;
+        return new Color(value.r * scale, value.g * scale, value.b * scale, value.a * scale);
+    }
+
+    public static implicit operator Color32(Color value)
+    {
+        return new Color32(
+            FloatToByte(value.r),
+            FloatToByte(value.g),
+            FloatToByte(value.b),
+            FloatToByte(value.a));
+    }
+
+    private static byte FloatToByte(float value)
+    {
+        var clamped = Math.Clamp(value, 0f, 1f);
+        return (byte)MathF.Round(clamped * byte.MaxValue);
+    }
+}
+
 public static class Mathf
 {
     public const float PI = MathF.PI;
@@ -468,6 +628,16 @@ public static class Mathf
     public static float Tan(float value)
     {
         return MathF.Tan(value);
+    }
+
+    public static float Atan2(float y, float x)
+    {
+        return MathF.Atan2(y, x);
+    }
+
+    public static bool Approximately(float left, float right)
+    {
+        return MathF.Abs(right - left) < MathF.Max(1E-06f * MathF.Max(MathF.Abs(left), MathF.Abs(right)), 1.121039E-44f);
     }
 
     public static int FloorToInt(float value)

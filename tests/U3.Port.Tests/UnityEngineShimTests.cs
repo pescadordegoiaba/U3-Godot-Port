@@ -436,6 +436,92 @@ public class UnityEngineShimTests
         AssertVector3Approx(Vector3.forward, transform.forward);
     }
 
+    [Fact]
+    public void Color32KeepsBytesAndConvertsToColor()
+    {
+        var color32 = new Color32(10, 20, 30, 40);
+
+        Color color = color32;
+
+        Assert.Equal(10, color32.r);
+        Assert.Equal(20, color32.g);
+        Assert.Equal(30, color32.b);
+        Assert.Equal(40, color32.a);
+        Assert.Equal(10f / 255f, color.r, 0.0001f);
+        Assert.Equal(20f / 255f, color.g, 0.0001f);
+        Assert.Equal(30f / 255f, color.b, 0.0001f);
+        Assert.Equal(40f / 255f, color.a, 0.0001f);
+    }
+
+    [Fact]
+    public void ColorConvertsToColor32WithClampAndRounding()
+    {
+        Color32 color32 = new Color(1f, 0.5f, -1f, 2f);
+
+        Assert.Equal(byte.MaxValue, color32.r);
+        Assert.Equal(128, color32.g);
+        Assert.Equal(0, color32.b);
+        Assert.Equal(byte.MaxValue, color32.a);
+    }
+
+    [Fact]
+    public void Vector2NormalizedWorks()
+    {
+        var value = new Vector2(3f, 4f);
+
+        AssertVector2Approx(new Vector2(0.6f, 0.8f), value.normalized);
+    }
+
+    [Fact]
+    public void Vector2DistanceAndDotWork()
+    {
+        Assert.Equal(5f, Vector2.Distance(new Vector2(0f, 0f), new Vector2(3f, 4f)));
+        Assert.Equal(11f, Vector2.Dot(new Vector2(1f, 2f), new Vector2(3f, 4f)));
+    }
+
+    [Fact]
+    public void MathfApproximatelyWorks()
+    {
+        Assert.True(Mathf.Approximately(1f, 1f + 0.0000001f));
+        Assert.False(Mathf.Approximately(1f, 1.01f));
+    }
+
+    [Fact]
+    public void MathfAtan2MatchesMathF()
+    {
+        Assert.Equal(MathF.Atan2(1f, 2f), Mathf.Atan2(1f, 2f));
+    }
+
+    [Fact]
+    public void Vector3IndexerReadsAndWritesComponents()
+    {
+        var value = Vector3.zero;
+
+        value[0] = 1f;
+        value[1] = 2f;
+        value[2] = 3f;
+
+        Assert.Equal(1f, value[0]);
+        Assert.Equal(2f, value[1]);
+        Assert.Equal(3f, value[2]);
+    }
+
+    [Fact]
+    public void QuaternionIndexerReadsAndWritesComponents()
+    {
+        var value = Quaternion.identity;
+
+        value[0] = 1f;
+        value[1] = 2f;
+        value[2] = 3f;
+        value[3] = 4f;
+
+        Assert.Equal(1f, value[0]);
+        Assert.Equal(2f, value[1]);
+        Assert.Equal(3f, value[2]);
+        Assert.Equal(4f, value[3]);
+    }
+
     private static void AssertVector3(Vector3 expected, Vector3 actual)
     {
         Assert.Equal(expected.x, actual.x);
@@ -448,6 +534,12 @@ public class UnityEngineShimTests
         Assert.True(MathF.Abs(expected.x - actual.x) <= tolerance, $"Expected x {expected.x}, got {actual.x}");
         Assert.True(MathF.Abs(expected.y - actual.y) <= tolerance, $"Expected y {expected.y}, got {actual.y}");
         Assert.True(MathF.Abs(expected.z - actual.z) <= tolerance, $"Expected z {expected.z}, got {actual.z}");
+    }
+
+    private static void AssertVector2Approx(Vector2 expected, Vector2 actual, float tolerance = 0.001f)
+    {
+        Assert.True(MathF.Abs(expected.x - actual.x) <= tolerance, $"Expected x {expected.x}, got {actual.x}");
+        Assert.True(MathF.Abs(expected.y - actual.y) <= tolerance, $"Expected y {expected.y}, got {actual.y}");
     }
 
     private sealed class TestComponent : Component
