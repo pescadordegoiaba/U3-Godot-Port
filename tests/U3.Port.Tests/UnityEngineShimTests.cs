@@ -139,6 +139,21 @@ public class UnityEngineShimTests
     }
 
     [Fact]
+    public void TransformRootUpdatesAfterParentChange()
+    {
+        var oldRoot = new GameObject("old-root");
+        var newRoot = new GameObject("new-root");
+        var child = new GameObject("child");
+
+        child.transform.SetParent(oldRoot.transform);
+        child.transform.SetParent(newRoot.transform);
+
+        Assert.Equal(0, oldRoot.transform.childCount);
+        Assert.Equal(1, newRoot.transform.childCount);
+        Assert.Same(newRoot.transform, child.transform.root);
+    }
+
+    [Fact]
     public void ActiveInHierarchyRespectsInactiveParent()
     {
         var parent = new GameObject("parent");

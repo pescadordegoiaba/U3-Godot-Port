@@ -5,12 +5,13 @@ public partial class GodotHost : Node
 {
     private readonly GodotRuntimeBootstrap _runtime = new();
     private readonly GodotSceneBridge _sceneBridge = new();
-    private UnityEngine.GameObject? _movingCube;
+    private UnityEngine.GameObject? _parentObject;
+    private UnityEngine.GameObject? _childObject;
 
     public override void _Ready()
     {
         _runtime.Initialize();
-        CreateMovingCube();
+        CreateHierarchyDemo();
         UnityEngine.Debug.Log("GodotHost ready");
     }
 
@@ -31,24 +32,37 @@ public partial class GodotHost : Node
         _runtime.Shutdown();
     }
 
-    private void CreateMovingCube()
+    private void CreateHierarchyDemo()
     {
-        _movingCube = new UnityEngine.GameObject("MovingCube");
-        _movingCube.transform.position = new UnityEngine.Vector3(0f, 1f, 0f);
-        _movingCube.transform.localScale = new UnityEngine.Vector3(0.75f, 0.75f, 0.75f);
-        _movingCube.AddComponent<MovingCubeBehaviour>();
+        _parentObject = new UnityEngine.GameObject("ParentObject");
+        _parentObject.transform.position = new UnityEngine.Vector3(0f, 1f, 0f);
+        _parentObject.transform.localScale = new UnityEngine.Vector3(0.8f, 0.8f, 0.8f);
+        _parentObject.AddComponent<MovingParentBehaviour>();
 
-        var node = _sceneBridge.CreateNode(_movingCube, this);
-        var mesh = new MeshInstance3D
-        {
-            Name = "MovingCubeMesh",
-            Mesh = new BoxMesh()
-        };
+        _childObject = new UnityEngine.GameObject("ChildObject");
+        _childObject.transform.SetParent(_parentObject.transform);
+        _childObject.transform.localPosition = new UnityEngine.Vector3(0f, 1.25f, 0f);
+        _childObject.transform.localScale = new UnityEngine.Vector3(0.45f, 0.45f, 0.45f);
 
-        node.AddChild(mesh);
+        var parentNode = _sceneBridge.CreateNode(_parentObject, this);
+        parentNode.AddChild(CreateBoxMesh("ParentMesh"));
+
+        var childNode = _sceneBridge.CreateNode(_childObject, this);
+        childNode.AddChild(CreateBoxMesh("ChildMesh"));
+
+        _sceneBridge.SyncAll();
     }
 
-    private sealed class MovingCubeBehaviour : UnityEngine.MonoBehaviour
+    private static MeshInstance3D CreateBoxMesh(string name)
+    {
+        return new MeshInstance3D
+        {
+            Name = name,
+            Mesh = new BoxMesh()
+        };
+    }
+
+    private sealed class MovingParentBehaviour : UnityEngine.MonoBehaviour
     {
         private bool _loggedStart;
 
@@ -56,7 +70,7 @@ public partial class GodotHost : Node
         {
             if (!_loggedStart)
             {
-                UnityEngine.Debug.Log("MovingCubeBehaviour.Start");
+                UnityEngine.Debug.Log("MovingParentBehaviour.Start");
                 _loggedStart = true;
             }
         }
