@@ -66,5 +66,8 @@
     <Compile Include="../../external/U3-SDK/Assets/Runtime/SDG.NetPak/SystemNetPakWriterEx.cs" Link="External/U3-SDK/Assets/Runtime/SDG.NetPak/SystemNetPakWriterEx.cs" />
     <Compile Include="../../external/U3-SDK/Assets/Runtime/SDG.NetPak/UnityNetPakReaderEx.cs" Link="External/U3-SDK/Assets/Runtime/SDG.NetPak/UnityNetPakReaderEx.cs" />
     <Compile Include="../../external/U3-SDK/Assets/Runtime/SDG.NetPak/UnityNetPakWriterEx.cs" Link="External/U3-SDK/Assets/Runtime/SDG.NetPak/UnityNetPakWriterEx.cs" />
+
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnityEx/QuaternionEx.cs" Link="External/U3-SDK/Assets/Runtime/UnityEx/QuaternionEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnityEx/Vector3Ex.cs" Link="External/U3-SDK/Assets/Runtime/UnityEx/Vector3Ex.cs" />
   </ItemGroup>
 </Project>

@@ -493,6 +493,20 @@ public class UnityEngineShimTests
     }
 
     [Fact]
+    public void MathfRepeatWrapsIntoRange()
+    {
+        Assert.Equal(10f, Mathf.Repeat(370f, 360f));
+        Assert.Equal(350f, Mathf.Repeat(-10f, 360f));
+    }
+
+    [Fact]
+    public void MathfDeltaAngleReturnsShortestSignedAngle()
+    {
+        Assert.Equal(20f, Mathf.DeltaAngle(350f, 10f));
+        Assert.Equal(-20f, Mathf.DeltaAngle(10f, 350f));
+    }
+
+    [Fact]
     public void Vector3IndexerReadsAndWritesComponents()
     {
         var value = Vector3.zero;

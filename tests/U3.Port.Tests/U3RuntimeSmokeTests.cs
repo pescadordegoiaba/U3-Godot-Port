@@ -283,7 +283,87 @@ public class U3RuntimeSmokeTests
         Assert.Equal("1.5 kB", ByteDisplay.Base10ToString(1500));
     }
 
-    private static void AssertVector3Approx(Vector3 expected, Vector3 actual, float tolerance)
+    [Fact]
+    public void QuaternionExDetectsNormalizedQuaternion()
+    {
+        Assert.True(Quaternion.identity.IsNormalized());
+        Assert.False(new Quaternion(1f, 1f, 1f, 1f).IsNormalized());
+    }
+
+    [Fact]
+    public void QuaternionExRoundsNearlyAxisAlignedQuaternion()
+    {
+        var rotation = Quaternion.Euler(0f, 89.98f, 0f);
+
+        var rounded = rotation.GetRoundedIfNearlyAxisAligned(tolerance: 0.1f);
+
+        AssertVector3Approx(Vector3.right, rounded * Vector3.forward, 0.001f);
+    }
+
+    [Fact]
+    public void Vector3ExDetectsNormalizedAndInvalidVectors()
+    {
+        Assert.True(Vector3.forward.IsNormalized());
+        Assert.False(new Vector3(2f, 0f, 0f).IsNormalized());
+        Assert.True(new Vector3(float.NaN, 0f, 0f).ContainsNaN());
+        Assert.True(new Vector3(float.PositiveInfinity, 0f, 0f).ContainsInfinity());
+        Assert.True(new Vector3(1f, 2f, 3f).IsFinite());
+        Assert.False(new Vector3(float.NaN, 2f, 3f).IsFinite());
+    }
+
+    [Fact]
+    public void Vector3ExNearlyEqualHelpersWork()
+    {
+        Assert.True(new Vector3(0.001f, -0.001f, 0.0005f).IsNearlyZero(tolerance: 0.01f));
+        Assert.True(new Vector3(1f, 2f, 3f).IsNearlyEqual(new Vector3(1.001f, 2.001f, 3.001f), tolerance: 0.01f));
+        Assert.True(new Vector3(2f, 2.001f, 1.999f).AreComponentsNearlyEqual(tolerance: 0.01f));
+    }
+
+    [Fact]
+    public void Vector3ExRoundsComponentsNearOne()
+    {
+        var rounded = new Vector3(0.999f, -0.999f, 0.5f).GetRoundedIfNearlyEqualToOne(tolerance: 0.01f);
+
+        AssertVector3Approx(new Vector3(1f, -1f, 0.5f), rounded);
+    }
+
+    [Fact]
+    public void Vector3ExComponentAndHorizontalHelpersWork()
+    {
+        var value = new Vector3(-3f, 4f, 12f);
+
+        AssertVector3Approx(new Vector3(3f, 4f, 12f), value.GetAbs());
+        Assert.Equal(-3f, value.GetMin());
+        Assert.Equal(12f, value.GetMax());
+        AssertVector3Approx(new Vector3(-3f, 0f, 12f), value.GetHorizontal());
+        Assert.Equal(MathF.Sqrt(153f), value.GetHorizontalMagnitude(), 0.0001f);
+        Assert.Equal(153f, value.GetHorizontalSqrMagnitude());
+    }
+
+    [Fact]
+    public void Vector3ExClampMagnitudeHelpersWork()
+    {
+        var horizontal = new Vector3(3f, 10f, 4f).ClampHorizontalMagnitude(2f);
+        var full = new Vector3(3f, 4f, 0f).ClampMagnitude(2f);
+
+        Assert.Equal(2f, horizontal.GetHorizontalMagnitude(), 0.0001f);
+        Assert.Equal(10f, horizontal.y);
+        Assert.Equal(2f, full.magnitude, 0.0001f);
+    }
+
+    [Fact]
+    public void Vector3ExTryParseVector3Works()
+    {
+        Assert.True(Vector3Ex.TryParseVector3("(1, 2, 3)", out var parsed));
+        AssertVector3Approx(new Vector3(1f, 2f, 3f), parsed);
+
+        Assert.True(Vector3Ex.TryParseVector3("4, 5, 6", out parsed));
+        AssertVector3Approx(new Vector3(4f, 5f, 6f), parsed);
+
+        Assert.False(Vector3Ex.TryParseVector3("invalid", out _));
+    }
+
+    private static void AssertVector3Approx(Vector3 expected, Vector3 actual, float tolerance = 0.001f)
     {
         Assert.True(MathF.Abs(expected.x - actual.x) <= tolerance, $"Expected x {expected.x}, got {actual.x}");
         Assert.True(MathF.Abs(expected.y - actual.y) <= tolerance, $"Expected y {expected.y}, got {actual.y}");

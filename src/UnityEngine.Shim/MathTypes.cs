@@ -640,6 +640,17 @@ public static class Mathf
         return MathF.Abs(right - left) < MathF.Max(1E-06f * MathF.Max(MathF.Abs(left), MathF.Abs(right)), 1.121039E-44f);
     }
 
+    public static float Repeat(float value, float length)
+    {
+        return Clamp(value - (MathF.Floor(value / length) * length), 0f, length);
+    }
+
+    public static float DeltaAngle(float current, float target)
+    {
+        var delta = Repeat(target - current, 360f);
+        return delta > 180f ? delta - 360f : delta;
+    }
+
     public static int FloorToInt(float value)
     {
         return (int)MathF.Floor(value);
