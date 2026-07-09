@@ -1,0 +1,11 @@
+<Project Sdk="Godot.NET.Sdk/4.7.0">
+  <ItemGroup>
+    <ProjectReference Include="../src/U3.GodotBridge/U3.GodotBridge.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>
