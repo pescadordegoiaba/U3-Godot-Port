@@ -243,6 +243,17 @@ public class UnityEngineShimTests
         Assert.Equal(0, behaviour.UpdateCount);
     }
 
+    [Fact]
+    public void RuntimeLoopCanMoveTransformFromMonoBehaviour()
+    {
+        var gameObject = new GameObject("moving");
+        gameObject.AddComponent<MovingBehaviour>();
+
+        RuntimeLoop.Tick(0.25f);
+
+        AssertVector3(new Vector3(0.25f, 1f, 0f), gameObject.transform.position);
+    }
+
     private static void AssertVector3(Vector3 expected, Vector3 actual)
     {
         Assert.Equal(expected.x, actual.x);
@@ -289,6 +300,14 @@ public class UnityEngineShimTests
         public override void LateUpdate()
         {
             LateUpdateCount++;
+        }
+    }
+
+    private sealed class MovingBehaviour : MonoBehaviour
+    {
+        public override void Update()
+        {
+            transform.position = new Vector3(Time.time, 1f, 0f);
         }
     }
 }
