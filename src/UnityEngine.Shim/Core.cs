@@ -3,6 +3,24 @@ namespace UnityEngine;
 public class Object
 {
     public string name { get; set; } = string.Empty;
+
+    public static void Destroy(Object? obj)
+    {
+        DestroyImmediate(obj);
+    }
+
+    public static void DestroyImmediate(Object? obj)
+    {
+        switch (obj)
+        {
+            case GameObject gameObject:
+                gameObject.DestroyInternal();
+                break;
+            case Component component:
+                component.gameObject.DestroyInternal();
+                break;
+        }
+    }
 }
 
 public class Component : Object
@@ -54,7 +72,9 @@ public class MonoBehaviour : Behaviour
 
 public class GameObject : Object
 {
+    private static readonly List<GameObject> Registry = new();
     private readonly List<Component> _components = new();
+    private bool _destroyed;
 
     public GameObject()
         : this(string.Empty)
@@ -68,11 +88,43 @@ public class GameObject : Object
 
         transform = new Transform();
         AddExistingComponent(transform);
+        Registry.Add(this);
     }
 
     public bool activeSelf { get; private set; }
 
+    public bool activeInHierarchy
+    {
+        get
+        {
+            if (!activeSelf || _destroyed)
+            {
+                return false;
+            }
+
+            var currentParent = transform.parent;
+            while (currentParent is not null)
+            {
+                if (!currentParent.gameObject.activeSelf)
+                {
+                    return false;
+                }
+
+                currentParent = currentParent.parent;
+            }
+
+            return true;
+        }
+    }
+
     public Transform transform { get; }
+
+    public static IEnumerable<GameObject> AllObjects => Registry.Where(gameObject => !gameObject._destroyed);
+
+    public static GameObject? Find(string name)
+    {
+        return AllObjects.FirstOrDefault(gameObject => gameObject.name == name);
+    }
 
     public void SetActive(bool value)
     {
@@ -117,22 +169,132 @@ public class GameObject : Object
     {
         component.gameObject = this;
         _components.Add(component);
+
+        if (component is MonoBehaviour monoBehaviour)
+        {
+            RuntimeLoop.Register(monoBehaviour);
+        }
+    }
+
+    internal void DestroyInternal()
+    {
+        if (_destroyed)
+        {
+            return;
+        }
+
+        _destroyed = true;
+        transform.SetParent(null);
+        Registry.Remove(this);
+
+        foreach (var component in _components.OfType<MonoBehaviour>())
+        {
+            RuntimeLoop.Unregister(component);
+        }
+    }
+
+    internal static void ResetRegistryForTests()
+    {
+        Registry.Clear();
     }
 }
 
 public class Transform : Component
 {
-    public Vector3 position { get; set; }
+    private readonly List<Transform> _children = new();
+    private Transform? _parent;
+    private Vector3 _localPosition;
+    private Quaternion _localRotation = Quaternion.identity;
 
-    public Vector3 localPosition { get; set; }
+    // World/local composition is intentionally simplified for this shim layer:
+    // position mirrors localPosition and rotation mirrors localRotation.
+    public Vector3 position
+    {
+        get => _localPosition;
+        set => _localPosition = value;
+    }
 
-    public Quaternion rotation { get; set; } = Quaternion.identity;
+    public Vector3 localPosition
+    {
+        get => _localPosition;
+        set => _localPosition = value;
+    }
 
-    public Quaternion localRotation { get; set; } = Quaternion.identity;
+    public Quaternion rotation
+    {
+        get => _localRotation;
+        set => _localRotation = value;
+    }
+
+    public Quaternion localRotation
+    {
+        get => _localRotation;
+        set => _localRotation = value;
+    }
 
     public Vector3 localScale { get; set; } = Vector3.one;
 
-    public Transform? parent { get; set; }
+    public Transform? parent
+    {
+        get => _parent;
+        set => SetParent(value);
+    }
+
+    public int childCount => _children.Count;
+
+    public IEnumerable<Transform> children => _children;
+
+    public Transform root
+    {
+        get
+        {
+            var current = this;
+            while (current.parent is not null)
+            {
+                current = current.parent;
+            }
+
+            return current;
+        }
+    }
+
+    public Transform GetChild(int index)
+    {
+        return _children[index];
+    }
+
+    public void SetParent(Transform? parent)
+    {
+        if (ReferenceEquals(_parent, parent))
+        {
+            return;
+        }
+
+        if (parent is not null && CreatesCycle(parent))
+        {
+            throw new InvalidOperationException("Cannot set a Transform parent to itself or one of its children.");
+        }
+
+        _parent?._children.Remove(this);
+        _parent = parent;
+        _parent?._children.Add(this);
+    }
+
+    private bool CreatesCycle(Transform candidateParent)
+    {
+        var current = candidateParent;
+        while (current is not null)
+        {
+            if (ReferenceEquals(current, this))
+            {
+                return true;
+            }
+
+            current = current.parent;
+        }
+
+        return false;
+    }
 }
 
 public class Coroutine

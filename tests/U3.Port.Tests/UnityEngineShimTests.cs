@@ -5,6 +5,11 @@ namespace U3.Port.Tests;
 
 public class UnityEngineShimTests
 {
+    public UnityEngineShimTests()
+    {
+        RuntimeLoop.Reset();
+    }
+
     [Fact]
     public void GameObjectCreatesTransformAutomatically()
     {
@@ -92,6 +97,152 @@ public class UnityEngineShimTests
         Assert.Equal(10f, Mathf.Lerp(0f, 10f, 2f));
     }
 
+    [Fact]
+    public void TransformParentAddsChildToParent()
+    {
+        var parent = new GameObject("parent");
+        var child = new GameObject("child");
+
+        child.transform.parent = parent.transform;
+
+        Assert.Same(parent.transform, child.transform.parent);
+        Assert.Equal(1, parent.transform.childCount);
+        Assert.Same(child.transform, parent.transform.GetChild(0));
+    }
+
+    [Fact]
+    public void TransformParentRemovesChildFromOldParent()
+    {
+        var oldParent = new GameObject("old-parent");
+        var newParent = new GameObject("new-parent");
+        var child = new GameObject("child");
+
+        child.transform.SetParent(oldParent.transform);
+        child.transform.SetParent(newParent.transform);
+
+        Assert.Equal(0, oldParent.transform.childCount);
+        Assert.Equal(1, newParent.transform.childCount);
+        Assert.Same(child.transform, newParent.transform.GetChild(0));
+    }
+
+    [Fact]
+    public void TransformRootReturnsTopLevelParent()
+    {
+        var root = new GameObject("root");
+        var middle = new GameObject("middle");
+        var leaf = new GameObject("leaf");
+
+        middle.transform.SetParent(root.transform);
+        leaf.transform.SetParent(middle.transform);
+
+        Assert.Same(root.transform, leaf.transform.root);
+    }
+
+    [Fact]
+    public void ActiveInHierarchyRespectsInactiveParent()
+    {
+        var parent = new GameObject("parent");
+        var child = new GameObject("child");
+        child.transform.SetParent(parent.transform);
+
+        parent.SetActive(false);
+
+        Assert.False(parent.activeInHierarchy);
+        Assert.False(child.activeInHierarchy);
+
+        parent.SetActive(true);
+
+        Assert.True(parent.activeInHierarchy);
+        Assert.True(child.activeInHierarchy);
+    }
+
+    [Fact]
+    public void GameObjectFindUsesRegistry()
+    {
+        var gameObject = new GameObject("tracked");
+
+        Assert.Same(gameObject, GameObject.Find("tracked"));
+
+        UnityEngine.Object.Destroy(gameObject);
+
+        Assert.Null(GameObject.Find("tracked"));
+    }
+
+    [Fact]
+    public void RuntimeLoopCallsAwakeOnce()
+    {
+        var behaviour = new GameObject().AddComponent<CountingBehaviour>();
+
+        RuntimeLoop.Tick(0.1f);
+        RuntimeLoop.Tick(0.1f);
+
+        Assert.Equal(1, behaviour.AwakeCount);
+    }
+
+    [Fact]
+    public void RuntimeLoopCallsStartOnce()
+    {
+        var behaviour = new GameObject().AddComponent<CountingBehaviour>();
+
+        RuntimeLoop.Tick(0.1f);
+        RuntimeLoop.Tick(0.1f);
+
+        Assert.Equal(1, behaviour.StartCount);
+    }
+
+    [Fact]
+    public void RuntimeLoopCallsUpdateOnEachTick()
+    {
+        var behaviour = new GameObject().AddComponent<CountingBehaviour>();
+
+        RuntimeLoop.Tick(0.1f);
+        RuntimeLoop.Tick(0.2f);
+
+        Assert.Equal(2, behaviour.UpdateCount);
+        Assert.Equal(2, behaviour.LateUpdateCount);
+        Assert.Equal(2, Time.frameCount);
+        Assert.Equal(0.2f, Time.deltaTime);
+    }
+
+    [Fact]
+    public void RuntimeLoopCallsFixedUpdateOnTickFixed()
+    {
+        var behaviour = new GameObject().AddComponent<CountingBehaviour>();
+
+        RuntimeLoop.TickFixed(0.05f);
+        RuntimeLoop.TickFixed();
+
+        Assert.Equal(2, behaviour.FixedUpdateCount);
+        Assert.Equal(0.05f, Time.fixedDeltaTime);
+    }
+
+    [Fact]
+    public void RuntimeLoopDoesNotCallUpdateWhenBehaviourDisabled()
+    {
+        var behaviour = new GameObject().AddComponent<CountingBehaviour>();
+        behaviour.enabled = false;
+
+        RuntimeLoop.Tick(0.1f);
+
+        Assert.Equal(1, behaviour.AwakeCount);
+        Assert.Equal(1, behaviour.StartCount);
+        Assert.Equal(0, behaviour.UpdateCount);
+    }
+
+    [Fact]
+    public void RuntimeLoopDoesNotCallUpdateWhenGameObjectInactive()
+    {
+        var gameObject = new GameObject();
+        var behaviour = gameObject.AddComponent<CountingBehaviour>();
+        gameObject.SetActive(false);
+
+        RuntimeLoop.Tick(0.1f);
+
+        Assert.Equal(1, behaviour.AwakeCount);
+        Assert.Equal(1, behaviour.StartCount);
+        Assert.Equal(0, behaviour.UpdateCount);
+    }
+
     private static void AssertVector3(Vector3 expected, Vector3 actual)
     {
         Assert.Equal(expected.x, actual.x);
@@ -101,5 +252,43 @@ public class UnityEngineShimTests
 
     private sealed class TestComponent : Component
     {
+    }
+
+    private sealed class CountingBehaviour : MonoBehaviour
+    {
+        public int AwakeCount { get; private set; }
+
+        public int StartCount { get; private set; }
+
+        public int UpdateCount { get; private set; }
+
+        public int FixedUpdateCount { get; private set; }
+
+        public int LateUpdateCount { get; private set; }
+
+        public override void Awake()
+        {
+            AwakeCount++;
+        }
+
+        public override void Start()
+        {
+            StartCount++;
+        }
+
+        public override void Update()
+        {
+            UpdateCount++;
+        }
+
+        public override void FixedUpdate()
+        {
+            FixedUpdateCount++;
+        }
+
+        public override void LateUpdate()
+        {
+            LateUpdateCount++;
+        }
     }
 }
