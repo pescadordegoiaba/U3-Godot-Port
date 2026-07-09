@@ -8,7 +8,15 @@ public sealed class GodotSceneBridge
     private readonly Dictionary<GameObject, Node3D> _nodesByGameObject = new();
     private readonly Dictionary<GameObject, Node> _rootNodesByGameObject = new();
     private readonly Dictionary<GameObject, MeshInstance3D> _meshInstancesByGameObject = new();
+    private readonly Dictionary<UnityEngine.Mesh, Godot.Mesh> _meshResourcesByUnityMesh = new();
+    private readonly Dictionary<UnityEngine.Material, MaterialCacheEntry> _materialResourcesByUnityMaterial = new();
     private readonly HashSet<GameObject> _warnedMissingParentNodes = new();
+
+    public int MeshResourcesCreated { get; private set; }
+
+    public int MaterialResourcesCreated { get; private set; }
+
+    public int MeshInstancesCreated { get; private set; }
 
     public Node3D CreateNode(GameObject gameObject, Node parent)
     {
@@ -63,7 +71,12 @@ public sealed class GodotSceneBridge
         _nodesByGameObject.Clear();
         _rootNodesByGameObject.Clear();
         _meshInstancesByGameObject.Clear();
+        _meshResourcesByUnityMesh.Clear();
+        _materialResourcesByUnityMaterial.Clear();
         _warnedMissingParentNodes.Clear();
+        MeshResourcesCreated = 0;
+        MaterialResourcesCreated = 0;
+        MeshInstancesCreated = 0;
     }
 
     private void SyncParent(GameObject gameObject, Node3D node)
@@ -122,9 +135,9 @@ public sealed class GodotSceneBridge
         }
 
         var meshInstance = GetOrCreateMeshInstance(gameObject, node);
-        meshInstance.Mesh = CreateGodotMesh(unityMesh.primitiveKind);
+        meshInstance.Mesh = GetOrCreateGodotMesh(unityMesh);
         meshInstance.Visible = gameObject.activeInHierarchy && meshRenderer.enabled;
-        meshInstance.MaterialOverride = CreateGodotMaterial(meshRenderer.sharedMaterial);
+        meshInstance.MaterialOverride = GetOrCreateGodotMaterial(meshRenderer.sharedMaterial);
     }
 
     private MeshInstance3D GetOrCreateMeshInstance(GameObject gameObject, Node3D node)
@@ -146,24 +159,51 @@ public sealed class GodotSceneBridge
 
         node.AddChild(meshInstance);
         _meshInstancesByGameObject.Add(gameObject, meshInstance);
+        MeshInstancesCreated++;
         return meshInstance;
     }
 
-    private static Godot.Mesh CreateGodotMesh(UnityEngine.Mesh.PrimitiveKind primitiveKind)
+    private Godot.Mesh GetOrCreateGodotMesh(UnityEngine.Mesh mesh)
     {
-        return primitiveKind switch
+        if (_meshResourcesByUnityMesh.TryGetValue(mesh, out var godotMesh))
+        {
+            return godotMesh;
+        }
+
+        godotMesh = mesh.primitiveKind switch
         {
             UnityEngine.Mesh.PrimitiveKind.Sphere => new SphereMesh(),
             _ => new BoxMesh()
         };
+
+        _meshResourcesByUnityMesh.Add(mesh, godotMesh);
+        MeshResourcesCreated++;
+        return godotMesh;
     }
 
-    private static StandardMaterial3D CreateGodotMaterial(UnityEngine.Material material)
+    private StandardMaterial3D GetOrCreateGodotMaterial(UnityEngine.Material material)
     {
-        return new StandardMaterial3D
+        if (!_materialResourcesByUnityMaterial.TryGetValue(material, out var entry))
         {
-            AlbedoColor = ToGodot(material.color)
-        };
+            entry = new MaterialCacheEntry(new StandardMaterial3D());
+            _materialResourcesByUnityMaterial.Add(material, entry);
+            MaterialResourcesCreated++;
+        }
+
+        var color = ToGodot(material.color);
+        if (entry.LastColor != color)
+        {
+            entry.Material.AlbedoColor = color;
+            entry.LastColor = color;
+        }
+
+        if (entry.LastName != material.name)
+        {
+            entry.Material.ResourceName = material.name;
+            entry.LastName = material.name;
+        }
+
+        return entry.Material;
     }
 
     private static Godot.Vector3 ToGodot(UnityEngine.Vector3 value)
@@ -179,5 +219,19 @@ public sealed class GodotSceneBridge
     private static Godot.Quaternion ToGodot(UnityEngine.Quaternion value)
     {
         return new Godot.Quaternion(value.x, value.y, value.z, value.w);
+    }
+
+    private sealed class MaterialCacheEntry
+    {
+        public MaterialCacheEntry(StandardMaterial3D material)
+        {
+            Material = material;
+        }
+
+        public StandardMaterial3D Material { get; }
+
+        public Godot.Color LastColor { get; set; }
+
+        public string LastName { get; set; } = string.Empty;
     }
 }
