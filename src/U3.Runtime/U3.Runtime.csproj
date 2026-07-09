@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../UnityEngine.Shim/UnityEngine.Shim.csproj" />
+    <ProjectReference Include="../UnityEngine.UI.Shim/UnityEngine.UI.Shim.csproj" />
+    <ProjectReference Include="../TMPro.Shim/TMPro.Shim.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>

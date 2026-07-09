@@ -1,0 +1,12 @@
+/home/gullin/Downloads/U3-SDK/src/UnityEngine.Shim/bin/Debug/net8.0/UnityEngine.Shim.deps.json
+/home/gullin/Downloads/U3-SDK/src/UnityEngine.Shim/bin/Debug/net8.0/UnityEngine.Shim.dll
+/home/gullin/Downloads/U3-SDK/src/UnityEngine.Shim/bin/Debug/net8.0/UnityEngine.Shim.pdb
+/home/gullin/Downloads/U3-SDK/src/UnityEngine.Shim/obj/Debug/net8.0/UnityEngine.Shim.GeneratedMSBuildEditorConfig.editorconfig
+/home/gullin/Downloads/U3-SDK/src/UnityEngine.Shim/obj/Debug/net8.0/UnityEngine.Shim.AssemblyInfoInputs.cache
+/home/gullin/Downloads/U3-SDK/src/UnityEngine.Shim/obj/Debug/net8.0/UnityEngine.Shim.AssemblyInfo.cs
+/home/gullin/Downloads/U3-SDK/src/UnityEngine.Shim/obj/Debug/net8.0/UnityEngine.Shim.csproj.CoreCompileInputs.cache
+/home/gullin/Downloads/U3-SDK/src/UnityEngine.Shim/obj/Debug/net8.0/UnityEngine.Shim.sourcelink.json
+/home/gullin/Downloads/U3-SDK/src/UnityEngine.Shim/obj/Debug/net8.0/UnityEngine.Shim.dll
+/home/gullin/Downloads/U3-SDK/src/UnityEngine.Shim/obj/Debug/net8.0/refint/UnityEngine.Shim.dll
+/home/gullin/Downloads/U3-SDK/src/UnityEngine.Shim/obj/Debug/net8.0/UnityEngine.Shim.pdb
+/home/gullin/Downloads/U3-SDK/src/UnityEngine.Shim/obj/Debug/net8.0/ref/UnityEngine.Shim.dll

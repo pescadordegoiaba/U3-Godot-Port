@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "8U9GhisKEwo=",
+  "success": true,
+  "projectFilePath": "/home/gullin/Downloads/U3-SDK/src/UnityEngine.Shim/UnityEngine.Shim.csproj",
+  "expectedPackageFiles": [
+    "/home/gullin/.nuget/packages/microsoft.netcore.app.ref/8.0.28/microsoft.netcore.app.ref.8.0.28.nupkg.sha512",
+    "/home/gullin/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.28/microsoft.aspnetcore.app.ref.8.0.28.nupkg.sha512"
+  ],
+  "logs": []
+}

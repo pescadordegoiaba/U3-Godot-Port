@@ -1,0 +1,105 @@
+{
+  "version": 3,
+  "targets": {
+    "net8.0": {
+      "UnityEngine.Shim/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "compile": {
+          "bin/placeholder/UnityEngine.Shim.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/UnityEngine.Shim.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "UnityEngine.Shim/1.0.0": {
+      "type": "project",
+      "path": "../UnityEngine.Shim/UnityEngine.Shim.csproj",
+      "msbuildProject": "../UnityEngine.Shim/UnityEngine.Shim.csproj"
+    }
+  },
+  "projectFileDependencyGroups": {
+    "net8.0": [
+      "UnityEngine.Shim >= 1.0.0"
+    ]
+  },
+  "packageFolders": {
+    "/home/gullin/.nuget/packages/": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "/home/gullin/Downloads/U3-SDK/src/U3.GodotBridge/U3.GodotBridge.csproj",
+      "projectName": "U3.GodotBridge",
+      "projectPath": "/home/gullin/Downloads/U3-SDK/src/U3.GodotBridge/U3.GodotBridge.csproj",
+      "packagesPath": "/home/gullin/.nuget/packages/",
+      "outputPath": "/home/gullin/Downloads/U3-SDK/src/U3.GodotBridge/obj/",
+      "projectStyle": "PackageReference",
+      "configFilePaths": [
+        "/home/gullin/.nuget/NuGet/NuGet.Config"
+      ],
+      "originalTargetFrameworks": [
+        "net8.0"
+      ],
+      "sources": {
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "projectReferences": {
+            "/home/gullin/Downloads/U3-SDK/src/UnityEngine.Shim/UnityEngine.Shim.csproj": {
+              "projectPath": "/home/gullin/Downloads/U3-SDK/src/UnityEngine.Shim/UnityEngine.Shim.csproj"
+            }
+          }
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      },
+      "SdkAnalysisLevel": "10.0.100"
+    },
+    "frameworks": {
+      "net8.0": {
+        "targetAlias": "net8.0",
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[8.0.28, 8.0.28]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Ref",
+            "version": "[8.0.28, 8.0.28]"
+          }
+        ],
+        "frameworkReferences": {
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.109/PortableRuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}

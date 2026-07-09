@@ -1,0 +1,16 @@
+/home/gullin/Downloads/U3-SDK/tests/U3.Port.Tests/bin/Debug/net8.0/U3.Port.Tests.deps.json
+/home/gullin/Downloads/U3-SDK/tests/U3.Port.Tests/bin/Debug/net8.0/U3.Port.Tests.dll
+/home/gullin/Downloads/U3-SDK/tests/U3.Port.Tests/bin/Debug/net8.0/U3.Port.Tests.pdb
+/home/gullin/Downloads/U3-SDK/tests/U3.Port.Tests/bin/Debug/net8.0/UnityEngine.Shim.dll
+/home/gullin/Downloads/U3-SDK/tests/U3.Port.Tests/bin/Debug/net8.0/UnityEngine.Shim.pdb
+/home/gullin/Downloads/U3-SDK/tests/U3.Port.Tests/obj/Debug/net8.0/U3.Port.Tests.csproj.AssemblyReference.cache
+/home/gullin/Downloads/U3-SDK/tests/U3.Port.Tests/obj/Debug/net8.0/U3.Port.Tests.GeneratedMSBuildEditorConfig.editorconfig
+/home/gullin/Downloads/U3-SDK/tests/U3.Port.Tests/obj/Debug/net8.0/U3.Port.Tests.AssemblyInfoInputs.cache
+/home/gullin/Downloads/U3-SDK/tests/U3.Port.Tests/obj/Debug/net8.0/U3.Port.Tests.AssemblyInfo.cs
+/home/gullin/Downloads/U3-SDK/tests/U3.Port.Tests/obj/Debug/net8.0/U3.Port.Tests.csproj.CoreCompileInputs.cache
+/home/gullin/Downloads/U3-SDK/tests/U3.Port.Tests/obj/Debug/net8.0/U3.Port.Tests.sourcelink.json
+/home/gullin/Downloads/U3-SDK/tests/U3.Port.Tests/obj/Debug/net8.0/U3.Port..B60FC4CA.Up2Date
+/home/gullin/Downloads/U3-SDK/tests/U3.Port.Tests/obj/Debug/net8.0/U3.Port.Tests.dll
+/home/gullin/Downloads/U3-SDK/tests/U3.Port.Tests/obj/Debug/net8.0/refint/U3.Port.Tests.dll
+/home/gullin/Downloads/U3-SDK/tests/U3.Port.Tests/obj/Debug/net8.0/U3.Port.Tests.pdb
+/home/gullin/Downloads/U3-SDK/tests/U3.Port.Tests/obj/Debug/net8.0/ref/U3.Port.Tests.dll

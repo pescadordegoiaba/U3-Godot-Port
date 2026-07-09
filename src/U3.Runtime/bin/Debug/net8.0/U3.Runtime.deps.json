@@ -1,0 +1,73 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "U3.Runtime/1.0.0": {
+        "dependencies": {
+          "TMPro.Shim": "1.0.0",
+          "UnityEngine.Shim": "1.0.0",
+          "UnityEngine.UI.Shim": "1.0.0"
+        },
+        "runtime": {
+          "U3.Runtime.dll": {}
+        }
+      },
+      "TMPro.Shim/1.0.0": {
+        "dependencies": {
+          "UnityEngine.Shim": "1.0.0"
+        },
+        "runtime": {
+          "TMPro.Shim.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "UnityEngine.Shim/1.0.0": {
+        "runtime": {
+          "UnityEngine.Shim.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "UnityEngine.UI.Shim/1.0.0": {
+        "dependencies": {
+          "UnityEngine.Shim": "1.0.0"
+        },
+        "runtime": {
+          "UnityEngine.UI.Shim.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "U3.Runtime/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "TMPro.Shim/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "UnityEngine.Shim/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "UnityEngine.UI.Shim/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
