@@ -126,20 +126,60 @@ public static class Time
     public static int frameCount { get; set; }
 }
 
-public static class Debug
+public interface IUnityLogger
 {
-    public static void Log(object? message)
+    void Log(object? message);
+
+    void LogWarning(object? message);
+
+    void LogError(object? message);
+}
+
+public sealed class ConsoleUnityLogger : IUnityLogger
+{
+    public void Log(object? message)
     {
         Console.WriteLine(message);
+    }
+
+    public void LogWarning(object? message)
+    {
+        Console.WriteLine(message);
+    }
+
+    public void LogError(object? message)
+    {
+        Console.Error.WriteLine(message);
+    }
+}
+
+public static class Debug
+{
+    private static readonly IUnityLogger DefaultLogger = new ConsoleUnityLogger();
+    private static IUnityLogger _logger = DefaultLogger;
+
+    public static void SetLogger(IUnityLogger? logger)
+    {
+        _logger = logger ?? DefaultLogger;
+    }
+
+    public static void ResetLogger()
+    {
+        _logger = DefaultLogger;
+    }
+
+    public static void Log(object? message)
+    {
+        _logger.Log(message);
     }
 
     public static void LogWarning(object? message)
     {
-        Console.WriteLine(message);
+        _logger.LogWarning(message);
     }
 
     public static void LogError(object? message)
     {
-        Console.Error.WriteLine(message);
+        _logger.LogError(message);
     }
 }

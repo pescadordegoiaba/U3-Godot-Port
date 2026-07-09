@@ -7,8 +7,8 @@ public partial class GodotHost : Node
 
     public override void _Ready()
     {
-        GD.Print("GodotHost ready");
         _runtime.Initialize();
+        UnityEngine.Debug.Log("GodotHost ready");
     }
 
     public override void _Process(double delta)
@@ -19,5 +19,10 @@ public partial class GodotHost : Node
     public override void _PhysicsProcess(double delta)
     {
         _runtime.TickFixed((float)delta);
+    }
+
+    public override void _ExitTree()
+    {
+        _runtime.Shutdown();
     }
 }

@@ -4,10 +4,21 @@ namespace U3.GodotBridge;
 
 public sealed class GodotRuntimeBootstrap
 {
+    private readonly IUnityLogger _logger;
     private bool _initialized;
     private BridgeTestBehaviour? _behaviour;
 
     public GameObject? HostObject { get; private set; }
+
+    public GodotRuntimeBootstrap()
+        : this(new GodotUnityLogger())
+    {
+    }
+
+    public GodotRuntimeBootstrap(IUnityLogger logger)
+    {
+        _logger = logger;
+    }
 
     public void Initialize()
     {
@@ -16,6 +27,7 @@ public sealed class GodotRuntimeBootstrap
             return;
         }
 
+        Debug.SetLogger(_logger);
         RuntimeLoop.Reset();
 
         HostObject = new GameObject("GodotHost");
@@ -35,6 +47,20 @@ public sealed class GodotRuntimeBootstrap
     {
         Initialize();
         RuntimeLoop.TickFixed(deltaTime);
+    }
+
+    public void Shutdown()
+    {
+        if (!_initialized)
+        {
+            return;
+        }
+
+        RuntimeLoop.Reset();
+        Debug.ResetLogger();
+        HostObject = null;
+        _behaviour = null;
+        _initialized = false;
     }
 
     private sealed class BridgeTestBehaviour : MonoBehaviour
