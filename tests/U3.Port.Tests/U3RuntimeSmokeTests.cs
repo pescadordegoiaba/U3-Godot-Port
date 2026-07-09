@@ -73,6 +73,76 @@ public class U3RuntimeSmokeTests
     }
 
     [Fact]
+    public void SystemNetPakExtensionsRoundTripPrimitiveValues()
+    {
+        var guid = Guid.Parse("00112233-4455-6677-8899-aabbccddeeff");
+        var dateTime = new DateTime(2026, 7, 9, 12, 30, 0, DateTimeKind.Utc);
+        var buffer = new byte[256];
+        var writer = new NetPakWriter { buffer = buffer };
+
+        Assert.True(writer.WriteInt32(-123456));
+        Assert.True(writer.WriteUInt64(9_876_543_210UL));
+        Assert.True(writer.WriteFloat(12.5f));
+        Assert.True(writer.WriteString("hello netpak"));
+        Assert.True(writer.WriteGuid(guid));
+        Assert.True(writer.WriteDateTime(dateTime));
+        Assert.True(writer.Flush());
+        Assert.Equal(NetPakWriter.EErrorFlags.None, writer.errors);
+
+        var reader = new NetPakReader();
+        reader.SetBufferSegment(buffer, writer.writeByteIndex);
+
+        Assert.True(reader.ReadInt32(out var intValue));
+        Assert.Equal(-123456, intValue);
+
+        Assert.True(reader.ReadUInt64(out var ulongValue));
+        Assert.Equal(9_876_543_210UL, ulongValue);
+
+        Assert.True(reader.ReadFloat(out var floatValue));
+        Assert.Equal(12.5f, floatValue);
+
+        Assert.True(reader.ReadString(out var stringValue));
+        Assert.Equal("hello netpak", stringValue);
+
+        Assert.True(reader.ReadGuid(out var guidValue));
+        Assert.Equal(guid, guidValue);
+
+        Assert.True(reader.ReadDateTime(out var dateTimeValue));
+        Assert.Equal(dateTime, dateTimeValue);
+        Assert.Equal(NetPakReader.EErrorFlags.None, reader.errors);
+    }
+
+    [Fact]
+    public void SystemNetPakExtensionsRoundTripQuantizedValues()
+    {
+        var buffer = new byte[64];
+        var writer = new NetPakWriter { buffer = buffer };
+
+        Assert.True(writer.WriteSignedInt(-12, bitCount: 6));
+        Assert.True(writer.WriteUnsignedClampedFloat(12.75f, intBitCount: 5, fracBitCount: 2));
+        Assert.True(writer.WriteClampedFloat(-7.5f, intBitCount: 5, fracBitCount: 1));
+        Assert.True(writer.WriteDegrees(90f, bitCount: 8));
+        Assert.True(writer.Flush());
+        Assert.Equal(NetPakWriter.EErrorFlags.None, writer.errors);
+
+        var reader = new NetPakReader();
+        reader.SetBufferSegment(buffer, writer.writeByteIndex);
+
+        Assert.True(reader.ReadSignedInt(bitCount: 6, out var signedInt));
+        Assert.Equal(-12, signedInt);
+
+        Assert.True(reader.ReadUnsignedClampedFloat(intBitCount: 5, fracBitCount: 2, out var unsignedFloat));
+        Assert.Equal(12.75f, unsignedFloat);
+
+        Assert.True(reader.ReadClampedFloat(intBitCount: 5, fracBitCount: 1, out var clampedFloat));
+        Assert.Equal(-7.5f, clampedFloat);
+
+        Assert.True(reader.ReadDegrees(out var degrees, bitCount: 8));
+        Assert.Equal(90f, degrees);
+        Assert.Equal(NetPakReader.EErrorFlags.None, reader.errors);
+    }
+
+    [Fact]
     public void SystemExStringHelpersWork()
     {
         var text = "alpha\nbeta\n";

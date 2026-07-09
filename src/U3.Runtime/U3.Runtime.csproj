@@ -62,5 +62,7 @@
     <Compile Include="../../external/U3-SDK/Assets/Runtime/SDG.NetPak/NetPakConst.cs" Link="External/U3-SDK/Assets/Runtime/SDG.NetPak/NetPakConst.cs" />
     <Compile Include="../../external/U3-SDK/Assets/Runtime/SDG.NetPak/NetPakReader.cs" Link="External/U3-SDK/Assets/Runtime/SDG.NetPak/NetPakReader.cs" />
     <Compile Include="../../external/U3-SDK/Assets/Runtime/SDG.NetPak/NetPakWriter.cs" Link="External/U3-SDK/Assets/Runtime/SDG.NetPak/NetPakWriter.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SDG.NetPak/SystemNetPakReaderEx.cs" Link="External/U3-SDK/Assets/Runtime/SDG.NetPak/SystemNetPakReaderEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/SDG.NetPak/SystemNetPakWriterEx.cs" Link="External/U3-SDK/Assets/Runtime/SDG.NetPak/SystemNetPakWriterEx.cs" />
   </ItemGroup>
 </Project>
