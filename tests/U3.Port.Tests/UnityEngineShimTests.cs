@@ -269,6 +269,62 @@ public class UnityEngineShimTests
         AssertVector3(new Vector3(0.25f, 1f, 0f), gameObject.transform.position);
     }
 
+    [Fact]
+    public void AddComponentAddsMeshFilter()
+    {
+        var gameObject = new GameObject("mesh-filter");
+
+        var meshFilter = gameObject.AddComponent<MeshFilter>();
+
+        Assert.Same(gameObject, meshFilter.gameObject);
+        Assert.Same(meshFilter, gameObject.GetComponent<MeshFilter>());
+    }
+
+    [Fact]
+    public void MeshFilterSharedMeshAcceptsBoxMesh()
+    {
+        var meshFilter = new GameObject("mesh").AddComponent<MeshFilter>();
+        var mesh = Mesh.CreateBox();
+
+        meshFilter.sharedMesh = mesh;
+
+        Assert.Same(mesh, meshFilter.sharedMesh);
+        Assert.Same(mesh, meshFilter.mesh);
+        Assert.Equal(Mesh.PrimitiveKind.Box, meshFilter.sharedMesh.primitiveKind);
+    }
+
+    [Fact]
+    public void MeshRendererMaterialAcceptsMaterial()
+    {
+        var meshRenderer = new GameObject("renderer").AddComponent<MeshRenderer>();
+        var material = new Material
+        {
+            name = "test-material",
+            color = Color.red
+        };
+
+        meshRenderer.material = material;
+
+        Assert.Same(material, meshRenderer.material);
+        Assert.Same(material, meshRenderer.sharedMaterial);
+        Assert.Equal(Color.red.r, meshRenderer.material.color.r);
+        Assert.Equal(Color.red.g, meshRenderer.material.color.g);
+        Assert.Equal(Color.red.b, meshRenderer.material.color.b);
+        Assert.Equal(Color.red.a, meshRenderer.material.color.a);
+    }
+
+    [Fact]
+    public void RendererEnabledCanBeToggled()
+    {
+        var meshRenderer = new GameObject("renderer").AddComponent<MeshRenderer>();
+
+        Assert.True(meshRenderer.enabled);
+
+        meshRenderer.enabled = false;
+
+        Assert.False(meshRenderer.enabled);
+    }
+
     private static void AssertVector3(Vector3 expected, Vector3 actual)
     {
         Assert.Equal(expected.x, actual.x);
