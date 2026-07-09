@@ -170,6 +170,11 @@ public class GameObject : Object
         component.gameObject = this;
         _components.Add(component);
 
+        if (component is Camera camera)
+        {
+            Camera.SetMainIfMissing(camera);
+        }
+
         if (component is MonoBehaviour monoBehaviour)
         {
             RuntimeLoop.Register(monoBehaviour);
@@ -191,11 +196,17 @@ public class GameObject : Object
         {
             RuntimeLoop.Unregister(component);
         }
+
+        foreach (var camera in _components.OfType<Camera>())
+        {
+            Camera.ClearMainIfSame(camera);
+        }
     }
 
     internal static void ResetRegistryForTests()
     {
         Registry.Clear();
+        Camera.ResetMain();
     }
 }
 
@@ -223,16 +234,34 @@ public class Transform : Component
     public Quaternion rotation
     {
         get => _localRotation;
-        set => _localRotation = value;
+        set => _localRotation = value.normalized;
     }
 
     public Quaternion localRotation
     {
         get => _localRotation;
-        set => _localRotation = value;
+        set => _localRotation = value.normalized;
+    }
+
+    public Vector3 eulerAngles
+    {
+        get => rotation.eulerAngles;
+        set => rotation = Quaternion.Euler(value);
+    }
+
+    public Vector3 localEulerAngles
+    {
+        get => localRotation.eulerAngles;
+        set => localRotation = Quaternion.Euler(value);
     }
 
     public Vector3 localScale { get; set; } = Vector3.one;
+
+    public Vector3 forward => rotation * Vector3.forward;
+
+    public Vector3 up => rotation * Vector3.up;
+
+    public Vector3 right => rotation * Vector3.right;
 
     public Transform? parent
     {
@@ -278,6 +307,17 @@ public class Transform : Component
         _parent?._children.Remove(this);
         _parent = parent;
         _parent?._children.Add(this);
+    }
+
+    public void LookAt(Vector3 worldPosition)
+    {
+        var direction = worldPosition - position;
+        rotation = Quaternion.LookRotation(direction);
+    }
+
+    public void LookAt(Transform target)
+    {
+        LookAt(target.position);
     }
 
     private bool CreatesCycle(Transform candidateParent)

@@ -75,6 +75,8 @@ public struct Vector3
 
     public static Vector3 back => new(0f, 0f, -1f);
 
+    public readonly float sqrMagnitude => (x * x) + (y * y) + (z * z);
+
     public readonly float magnitude => MathF.Sqrt((x * x) + (y * y) + (z * z));
 
     public readonly Vector3 normalized
@@ -82,8 +84,16 @@ public struct Vector3
         get
         {
             var currentMagnitude = magnitude;
-            return currentMagnitude > 0f ? this / currentMagnitude : zero;
+            return currentMagnitude > 1E-06f ? this / currentMagnitude : zero;
         }
+    }
+
+    public void Normalize()
+    {
+        var normalizedValue = normalized;
+        x = normalizedValue.x;
+        y = normalizedValue.y;
+        z = normalizedValue.z;
     }
 
     public static Vector3 operator +(Vector3 left, Vector3 right)
@@ -133,6 +143,29 @@ public struct Vector3
             (left.z * right.x) - (left.x * right.z),
             (left.x * right.y) - (left.y * right.x));
     }
+
+    public static float Angle(Vector3 from, Vector3 to)
+    {
+        var denominator = MathF.Sqrt(from.sqrMagnitude * to.sqrMagnitude);
+        if (denominator < 1E-06f)
+        {
+            return 0f;
+        }
+
+        var dot = Math.Clamp(Dot(from, to) / denominator, -1f, 1f);
+        return MathF.Acos(dot) * Mathf.Rad2Deg;
+    }
+
+    public static Vector3 ProjectOnPlane(Vector3 vector, Vector3 planeNormal)
+    {
+        var denominator = Dot(planeNormal, planeNormal);
+        if (denominator < 1E-06f)
+        {
+            return vector;
+        }
+
+        return vector - (planeNormal * (Dot(vector, planeNormal) / denominator));
+    }
 }
 
 public struct Quaternion
@@ -151,6 +184,186 @@ public struct Quaternion
     }
 
     public static Quaternion identity => new(0f, 0f, 0f, 1f);
+
+    public readonly Quaternion normalized => Normalize(this);
+
+    public readonly Vector3 eulerAngles
+    {
+        get
+        {
+            var q = normalized;
+
+            var sinrCosp = 2f * ((q.w * q.x) + (q.y * q.z));
+            var cosrCosp = 1f - (2f * ((q.x * q.x) + (q.y * q.y)));
+            var xAngle = MathF.Atan2(sinrCosp, cosrCosp);
+
+            var sinp = 2f * ((q.w * q.y) - (q.z * q.x));
+            var yAngle = MathF.Abs(sinp) >= 1f
+                ? MathF.CopySign(MathF.PI / 2f, sinp)
+                : MathF.Asin(sinp);
+
+            var sinyCosp = 2f * ((q.w * q.z) + (q.x * q.y));
+            var cosyCosp = 1f - (2f * ((q.y * q.y) + (q.z * q.z)));
+            var zAngle = MathF.Atan2(sinyCosp, cosyCosp);
+
+            return new Vector3(
+                NormalizeAngle(xAngle * Mathf.Rad2Deg),
+                NormalizeAngle(yAngle * Mathf.Rad2Deg),
+                NormalizeAngle(zAngle * Mathf.Rad2Deg));
+        }
+    }
+
+    public static Quaternion Euler(float x, float y, float z)
+    {
+        var xRotation = AngleAxis(x, Vector3.right);
+        var yRotation = AngleAxis(y, Vector3.up);
+        var zRotation = AngleAxis(z, Vector3.forward);
+        return (yRotation * xRotation * zRotation).normalized;
+    }
+
+    public static Quaternion Euler(Vector3 euler)
+    {
+        return Euler(euler.x, euler.y, euler.z);
+    }
+
+    public static Quaternion LookRotation(Vector3 forward)
+    {
+        return LookRotation(forward, Vector3.up);
+    }
+
+    public static Quaternion LookRotation(Vector3 forward, Vector3 upwards)
+    {
+        var normalizedForward = forward.normalized;
+        if (normalizedForward.sqrMagnitude < 1E-06f)
+        {
+            normalizedForward = Vector3.forward;
+        }
+
+        var normalizedUp = upwards.normalized;
+        if (normalizedUp.sqrMagnitude < 1E-06f)
+        {
+            normalizedUp = Vector3.up;
+        }
+
+        var right = Vector3.Cross(normalizedUp, normalizedForward).normalized;
+        if (right.sqrMagnitude < 1E-06f)
+        {
+            right = Vector3.Cross(Vector3.up, normalizedForward).normalized;
+            if (right.sqrMagnitude < 1E-06f)
+            {
+                right = Vector3.Cross(Vector3.right, normalizedForward).normalized;
+            }
+        }
+
+        var up = Vector3.Cross(normalizedForward, right);
+        return FromBasis(right, up, normalizedForward).normalized;
+    }
+
+    public static Quaternion Normalize(Quaternion value)
+    {
+        var magnitude = MathF.Sqrt(
+            (value.x * value.x) +
+            (value.y * value.y) +
+            (value.z * value.z) +
+            (value.w * value.w));
+
+        return magnitude > 1E-06f
+            ? new Quaternion(value.x / magnitude, value.y / magnitude, value.z / magnitude, value.w / magnitude)
+            : identity;
+    }
+
+    public static Quaternion operator *(Quaternion left, Quaternion right)
+    {
+        return new Quaternion(
+            (left.w * right.x) + (left.x * right.w) + (left.y * right.z) - (left.z * right.y),
+            (left.w * right.y) - (left.x * right.z) + (left.y * right.w) + (left.z * right.x),
+            (left.w * right.z) + (left.x * right.y) - (left.y * right.x) + (left.z * right.w),
+            (left.w * right.w) - (left.x * right.x) - (left.y * right.y) - (left.z * right.z));
+    }
+
+    public static Vector3 operator *(Quaternion rotation, Vector3 point)
+    {
+        var q = rotation.normalized;
+        var vector = new Vector3(q.x, q.y, q.z);
+        var uv = Vector3.Cross(vector, point);
+        var uuv = Vector3.Cross(vector, uv);
+        return point + (uv * (2f * q.w)) + (uuv * 2f);
+    }
+
+    private static Quaternion AngleAxis(float degrees, Vector3 axis)
+    {
+        var normalizedAxis = axis.normalized;
+        if (normalizedAxis.sqrMagnitude < 1E-06f)
+        {
+            return identity;
+        }
+
+        var radians = degrees * Mathf.Deg2Rad;
+        var halfRadians = radians * 0.5f;
+        var sin = MathF.Sin(halfRadians);
+        return new Quaternion(
+            normalizedAxis.x * sin,
+            normalizedAxis.y * sin,
+            normalizedAxis.z * sin,
+            MathF.Cos(halfRadians));
+    }
+
+    private static Quaternion FromBasis(Vector3 right, Vector3 up, Vector3 forward)
+    {
+        var m00 = right.x;
+        var m01 = up.x;
+        var m02 = forward.x;
+        var m10 = right.y;
+        var m11 = up.y;
+        var m12 = forward.y;
+        var m20 = right.z;
+        var m21 = up.z;
+        var m22 = forward.z;
+        var trace = m00 + m11 + m22;
+
+        if (trace > 0f)
+        {
+            var s = MathF.Sqrt(trace + 1f) * 2f;
+            return new Quaternion(
+                (m21 - m12) / s,
+                (m02 - m20) / s,
+                (m10 - m01) / s,
+                0.25f * s);
+        }
+
+        if (m00 > m11 && m00 > m22)
+        {
+            var s = MathF.Sqrt(1f + m00 - m11 - m22) * 2f;
+            return new Quaternion(
+                0.25f * s,
+                (m01 + m10) / s,
+                (m02 + m20) / s,
+                (m21 - m12) / s);
+        }
+
+        if (m11 > m22)
+        {
+            var s = MathF.Sqrt(1f + m11 - m00 - m22) * 2f;
+            return new Quaternion(
+                (m01 + m10) / s,
+                0.25f * s,
+                (m12 + m21) / s,
+                (m02 - m20) / s);
+        }
+
+        var finalS = MathF.Sqrt(1f + m22 - m00 - m11) * 2f;
+        return new Quaternion(
+            (m02 + m20) / finalS,
+            (m12 + m21) / finalS,
+            0.25f * finalS,
+            (m10 - m01) / finalS);
+    }
+
+    private static float NormalizeAngle(float angle)
+    {
+        angle %= 360f;
+        return angle < 0f ? angle + 360f : angle;
+    }
 }
 
 public struct Color

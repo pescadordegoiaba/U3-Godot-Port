@@ -8,6 +8,8 @@ public sealed class GodotSceneBridge
     private readonly Dictionary<GameObject, Node3D> _nodesByGameObject = new();
     private readonly Dictionary<GameObject, Node> _rootNodesByGameObject = new();
     private readonly Dictionary<GameObject, MeshInstance3D> _meshInstancesByGameObject = new();
+    private readonly Dictionary<GameObject, Camera3D> _camerasByGameObject = new();
+    private readonly Dictionary<GameObject, Light3D> _lightsByGameObject = new();
     private readonly Dictionary<UnityEngine.Mesh, Godot.Mesh> _meshResourcesByUnityMesh = new();
     private readonly Dictionary<UnityEngine.Material, MaterialCacheEntry> _materialResourcesByUnityMaterial = new();
     private readonly HashSet<GameObject> _warnedMissingParentNodes = new();
@@ -58,6 +60,8 @@ public sealed class GodotSceneBridge
         {
             Sync(pair.Key, pair.Value);
             SyncMesh(pair.Key, pair.Value);
+            SyncCamera(pair.Key, pair.Value);
+            SyncLight(pair.Key, pair.Value);
         }
     }
 
@@ -71,6 +75,8 @@ public sealed class GodotSceneBridge
         _nodesByGameObject.Clear();
         _rootNodesByGameObject.Clear();
         _meshInstancesByGameObject.Clear();
+        _camerasByGameObject.Clear();
+        _lightsByGameObject.Clear();
         _meshResourcesByUnityMesh.Clear();
         _materialResourcesByUnityMaterial.Clear();
         _warnedMissingParentNodes.Clear();
@@ -119,7 +125,7 @@ public sealed class GodotSceneBridge
         var transform = gameObject.transform;
         node.Position = ToGodot(transform.position);
         node.Scale = ToGodot(transform.localScale);
-        node.Quaternion = ToGodot(transform.localRotation);
+        node.Quaternion = ToGodot(transform.localRotation.normalized);
         node.Visible = gameObject.activeInHierarchy;
     }
 
@@ -161,6 +167,116 @@ public sealed class GodotSceneBridge
         _meshInstancesByGameObject.Add(gameObject, meshInstance);
         MeshInstancesCreated++;
         return meshInstance;
+    }
+
+    private void SyncCamera(GameObject gameObject, Node3D node)
+    {
+        var camera = gameObject.GetComponent<UnityEngine.Camera>();
+        if (camera is null)
+        {
+            return;
+        }
+
+        var cameraNode = GetOrCreateCamera(gameObject, node);
+        var active = gameObject.activeInHierarchy && camera.enabled;
+        cameraNode.Current = active;
+        cameraNode.Visible = active;
+        cameraNode.Fov = camera.fieldOfView;
+        cameraNode.Near = camera.nearClipPlane;
+        cameraNode.Far = camera.farClipPlane;
+    }
+
+    private Camera3D GetOrCreateCamera(GameObject gameObject, Node3D node)
+    {
+        if (_camerasByGameObject.TryGetValue(gameObject, out var cameraNode))
+        {
+            if (!ReferenceEquals(cameraNode.GetParent(), node))
+            {
+                cameraNode.Reparent(node, keepGlobalTransform: false);
+            }
+
+            return cameraNode;
+        }
+
+        cameraNode = new Camera3D
+        {
+            Name = $"{node.Name}Camera"
+        };
+
+        node.AddChild(cameraNode);
+        _camerasByGameObject.Add(gameObject, cameraNode);
+        return cameraNode;
+    }
+
+    private void SyncLight(GameObject gameObject, Node3D node)
+    {
+        var light = gameObject.GetComponent<UnityEngine.Light>();
+        if (light is null)
+        {
+            return;
+        }
+
+        var lightNode = GetOrCreateLight(gameObject, node, light.type);
+        lightNode.Visible = gameObject.activeInHierarchy && light.enabled;
+        lightNode.LightEnergy = light.intensity;
+        lightNode.LightColor = ToGodot(light.color);
+
+        switch (lightNode)
+        {
+            case OmniLight3D omniLight:
+                omniLight.OmniRange = light.range;
+                break;
+            case SpotLight3D spotLight:
+                spotLight.SpotRange = light.range;
+                break;
+        }
+    }
+
+    private Light3D GetOrCreateLight(GameObject gameObject, Node3D node, LightType lightType)
+    {
+        if (_lightsByGameObject.TryGetValue(gameObject, out var lightNode))
+        {
+            if (!MatchesLightType(lightNode, lightType))
+            {
+                lightNode.QueueFree();
+                _lightsByGameObject.Remove(gameObject);
+            }
+            else
+            {
+                if (!ReferenceEquals(lightNode.GetParent(), node))
+                {
+                    lightNode.Reparent(node, keepGlobalTransform: false);
+                }
+
+                return lightNode;
+            }
+        }
+
+        lightNode = CreateLightNode(lightType);
+        lightNode.Name = $"{node.Name}Light";
+        node.AddChild(lightNode);
+        _lightsByGameObject.Add(gameObject, lightNode);
+        return lightNode;
+    }
+
+    private static bool MatchesLightType(Light3D lightNode, LightType lightType)
+    {
+        return lightType switch
+        {
+            LightType.Point => lightNode is OmniLight3D,
+            LightType.Spot => lightNode is SpotLight3D,
+            _ => lightNode is DirectionalLight3D
+        };
+    }
+
+    private static Light3D CreateLightNode(LightType lightType)
+    {
+        return lightType switch
+        {
+            LightType.Point => new OmniLight3D(),
+            LightType.Spot => new SpotLight3D(),
+            _ => new DirectionalLight3D()
+        };
     }
 
     private Godot.Mesh GetOrCreateGodotMesh(UnityEngine.Mesh mesh)
