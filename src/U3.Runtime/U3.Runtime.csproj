@@ -78,5 +78,6 @@
     <Compile Include="../../external/U3-SDK/Assets/Runtime/UnityEx/GameObjectEx.cs" Link="External/U3-SDK/Assets/Runtime/UnityEx/GameObjectEx.cs" />
     <Compile Include="../../external/U3-SDK/Assets/Runtime/UnityEx/TransformEx.cs" Link="External/U3-SDK/Assets/Runtime/UnityEx/TransformEx.cs" />
     <Compile Include="../../external/U3-SDK/Assets/Runtime/UnityEx/ComponentEx.cs" Link="External/U3-SDK/Assets/Runtime/UnityEx/ComponentEx.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnityEx/RaycastHitEx.cs" Link="External/U3-SDK/Assets/Runtime/UnityEx/RaycastHitEx.cs" />
   </ItemGroup>
 </Project>

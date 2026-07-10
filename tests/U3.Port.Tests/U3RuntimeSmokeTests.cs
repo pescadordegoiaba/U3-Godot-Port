@@ -576,6 +576,42 @@ public class U3RuntimeSmokeTests
     }
 
     [Fact]
+    public void RaycastHitExToDebugStringUsesHitRelationsAndHierarchyPath()
+    {
+        var root = new GameObject("root");
+        var child = new GameObject("child");
+        child.transform.SetParent(root.transform);
+        var collider = child.AddComponent<Collider>();
+        child.AddComponent<Rigidbody>();
+        var hit = new RaycastHit
+        {
+            collider = collider,
+            point = new Vector3(1f, 2f, 3f),
+            normal = Vector3.up
+        };
+
+        string debugString = hit.ToDebugString();
+
+        Assert.Contains("Collider:", debugString);
+        Assert.Contains("Rigidbody:", debugString);
+        Assert.Contains("Transform: root/child", debugString);
+        Assert.Contains("Position:", debugString);
+        Assert.Contains("Normal:", debugString);
+    }
+
+    [Fact]
+    public void RaycastHitExToDebugStringHandlesDefaultHit()
+    {
+        string debugString = default(RaycastHit).ToDebugString();
+
+        Assert.Contains("Collider:", debugString);
+        Assert.Contains("Rigidbody:", debugString);
+        Assert.Contains("Transform:", debugString);
+        Assert.Contains("Position:", debugString);
+        Assert.Contains("Normal:", debugString);
+    }
+
+    [Fact]
     public void TransformExRoundingAndRotationHelpersWork()
     {
         var gameObject = new GameObject("rotation");
