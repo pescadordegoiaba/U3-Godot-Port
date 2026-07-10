@@ -2,19 +2,19 @@
 
 Port gradual do U3-SDK para rodar sem Unity, usando .NET 8 e Godot 4 C# como backend.
 
-Este repositório não copia nem modifica o SDK original. O código upstream fica em `external/U3-SDK` como submodule apontando para `SmartlyDressedGames/U3-SDK`, e o port consome arquivos do SDK por links no projeto `src/U3.Runtime`.
+O SDK original fica em `external/U3-SDK` e não deve ser modificado. O projeto consome arquivos reais do U3-SDK por links no `src/U3.Runtime`, enquanto implementa uma camada fake/testável de compatibilidade Unity em `UnityEngine.Shim`.
 
 ## Estado Atual
 
-O projeto já tem uma base compilável com:
+O projeto já tem:
 
 - solução .NET `U3GodotPort.sln`;
-- shim `UnityEngine.Shim` com `GameObject`, `Component`, `MonoBehaviour`, `Transform`, `RuntimeLoop`, `Debug`, `Time`, math básico, câmera, luz e render básico;
-- `UnityEngine.UI.Shim` e `TMPro.Shim` como projetos reservados para etapas futuras;
-- `U3.Runtime` compilando uma fatia real do U3-SDK;
-- `U3.GodotBridge` com logger, loop runtime, sincronização básica `GameObject -> Node3D`, hierarquia, mesh, material, câmera e luz;
-- projeto Godot C# mínimo em `godot/`;
-- smoke tests cobrindo shim, NetPak, UnityNetPak e UnityEx math helpers.
+- `UnityEngine.Shim` com core Unity-like, math/foundation, lifecycle fake, debug logger, resources/player prefs fake, scene stubs, UI/TMPro stubs, render básico, câmera/luz, physics passivo e input fake;
+- `U3.Runtime` compilando fatias reais do U3-SDK sem copiar arquivos;
+- `U3.GodotBridge` sincronizando `GameObject -> Node3D`, hierarquia, mesh/material, câmera, luz, colliders e raycast via Godot Physics;
+- projeto Godot 4 C# em `godot/`;
+- demo mínima jogável com `PlayerControllerDemo`;
+- testes cobrindo shim, NetPak, UnityNetPak, UnityEx helpers, physics/input backend e a primeira demo foundation.
 
 Validação atual:
 
@@ -24,11 +24,11 @@ dotnet test U3GodotPort.sln
 dotnet build godot/U3GodotPort.Godot.csproj
 ```
 
-Último estado verificado: 70 testes passando.
+Último estado verificado: `145/145` testes passando e builds .NET/Godot passando.
 
-## Fatias do U3-SDK Já Linkadas
+## Fatias Reais do U3-SDK Linkadas
 
-`U3.Runtime` já compila, por links para `external/U3-SDK`, estas áreas pequenas e de baixo risco:
+`U3.Runtime` já compila, via links para `external/U3-SDK`, estas fatias:
 
 - `SystemEx`;
 - core de `UnturnedDat`;
@@ -37,70 +37,87 @@ dotnet build godot/U3GodotPort.Godot.csproj
 - `UnityNetPakReaderEx` / `UnityNetPakWriterEx`;
 - `UnityEx/QuaternionEx.cs`;
 - `UnityEx/Vector3Ex.cs`;
-- `UnityEx/MathfEx.cs`.
+- `UnityEx/MathfEx.cs`;
+- `UnityEx/Vector2Ex.cs`;
+- `UnityEx/ColorEx.cs`;
+- `UnityEx/BoundsEx.cs`;
+- `UnityEx/Matrix4x4Ex.cs`;
+- `UnityEx/RandomEx.cs`;
+- `UnityEx/GameObjectEx.cs`;
+- `UnityEx/TransformEx.cs`;
+- `UnityEx/ComponentEx.cs`;
+- `UnityEx/RaycastHitEx.cs`;
+- `UnityEx/BoxColliderEx.cs`;
+- `UnityEx/SphereColliderEx.cs`;
+- `UnityEx/CapsuleColliderEx.cs`.
 
-`MathfEx` agora usa o arquivo real do SDK. O shim adiciona apenas os tipos Unity mínimos exigidos por ele, como `Random.insideUnitCircle`.
+## Demo Godot
+
+O `GodotHost` cria uma cena simples com chão, alvos, player, câmera e luz. O player usa APIs fake Unity:
+
+- `W/A/S/D`: mover;
+- `LeftShift`: sprint;
+- `Space`: log de jump;
+- `E` ou mouse esquerdo: raycast da câmera para frente.
+
+Para testar manualmente:
+
+1. abra `godot/project.godot` no Godot 4 .NET/C#;
+2. rode `scenes/Main.tscn`;
+3. veja logs pelo `UnityEngine.Debug` redirecionado para Godot.
+
+Isso é uma demo técnica, não gameplay real do Unturned.
 
 ## Estratégia
 
 1. Manter `external/U3-SDK` intocado.
-2. Expandir `UnityEngine.Shim` só quando uma fatia real do SDK exigir.
-3. Linkar pequenos grupos de arquivos do U3-SDK em `U3.Runtime`.
-4. Criar smoke tests para cada fatia linkada.
-5. Usar `U3.GodotBridge` para mapear o runtime fake para Godot C#.
-6. Só depois avançar para física, assets, UI, cenas e networking.
-
-## Integração Godot Atual
-
-O projeto Godot em `godot/` tem uma cena principal e um `GodotHost.cs` que:
-
-- inicializa o runtime fake;
-- instala logger Godot para `UnityEngine.Debug`;
-- cria `GameObject`s fake;
-- sincroniza `Transform` para `Node3D`;
-- cria visual automático para `MeshFilter` + `MeshRenderer`;
-- sincroniza câmera e luz simples.
-
-Isso é um smoke test visual, não gameplay real.
+2. Expandir `UnityEngine.Shim` conforme fatias reais exigirem.
+3. Linkar arquivos pequenos do U3-SDK em `U3.Runtime`, nunca copiar.
+4. Criar smoke tests para cada fatia.
+5. Usar `U3.GodotBridge` para conectar o runtime fake ao Godot.
+6. Só avançar para assets, UI, cenas, rede e gameplay quando a base estiver estável.
 
 ## O Que Ainda Falta
 
 Principais blocos pendentes:
 
-- completar mais APIs matemáticas e helpers UnityEx;
-- implementar ou simular `Random`, `Bounds`, `Matrix4x4`, `Ray`, `LayerMask` e tipos próximos;
-- física: `Rigidbody`, `Collider`, `Physics`, raycasts e queries;
-- assets: `Resources`, `AssetBundle`, referências de conteúdo e carregamento real;
-- scenes: `SceneManager` e fluxo de mundo;
-- animação: `Animator` e estados básicos;
-- UI: `UnityEngine.UI`, TMPro e Glazier;
-- networking pesado, Steamworks e NetTransport;
-- gameplay systems do U3/Unturned ainda não foram compilados.
+- física real de `Rigidbody`, colisões, triggers e overlap queries completas;
+- `CharacterController` ou movimento de player mais próximo de Unity;
+- mouse-look e input configurável;
+- assets reais: `Resources`, `AssetBundle`, referências e carregamento de conteúdo;
+- `SceneManager` real e fluxo de mundo;
+- `Animator` funcional;
+- UI real, TMPro e Glazier;
+- Steamworks, NetTransport e networking pesado;
+- gameplay systems do U3/Unturned: mundo, entidades, itens, players, interação e regras.
 
 ## Quão Perto Está da Gameplay?
 
-Ainda está longe de gameplay jogável.
+Ainda não está perto de gameplay real, mas já passou da fase puramente estrutural.
 
 Estimativa técnica atual:
 
-- infraestrutura de port: baixa a média, já iniciada;
-- runtime fake Unity básico: aproximadamente 20-30%;
-- bridge visual Godot mínimo: aproximadamente 15-25%;
-- fatia real do U3-SDK compilada: menos de 5%;
-- gameplay real: 0%.
+- infraestrutura de port: média, com solução, testes, docs e fatias reais funcionando;
+- runtime fake Unity: aproximadamente 35-45%;
+- bridge Godot visual/física básica: aproximadamente 25-35%;
+- fatia real do U3-SDK compilada: ainda menos de 10%;
+- gameplay real: 0-5%, apenas uma demo técnica própria.
 
-O que já existe prova que a abordagem funciona: partes reais do SDK compilam, testes rodam, e objetos fake aparecem no Godot. Mas gameplay exige compilar e adaptar grandes áreas que ainda não foram tocadas: assets, física, entidades, mundo, itens, players, interação, UI e rede.
+O avanço importante é que agora existe um loop mínimo jogável: input fake, movimento cinemático, colliders, raycast Godot e objetos visuais. Ainda falta praticamente todo o código de gameplay real do U3/Unturned.
 
 ## Próximos Passos Recomendados
 
-1. Avaliar `UnityEx/ColorEx.cs` ou `UnityEx/Vector2Ex.cs` como próxima fatia pequena.
-2. Expandir `UnturnedDat` com helpers UnityDat de baixo risco.
-3. Mapear próxima fatia de data classes sem `MonoBehaviour`, física, UI ou assets pesados.
-4. Só depois iniciar stubs de física e assets.
+1. Implementar `OverlapSphere` no Godot com `IntersectShape`.
+2. Adicionar grounded check e jump simples no `PlayerControllerDemo`.
+3. Adicionar mouse-look ao `GodotInputBridge`.
+4. Avaliar a próxima fatia UnityEx pequena dependente de física passiva.
+5. Mapear data classes do U3-SDK que possam compilar sem assets, UI, networking ou gameplay pesado.
 
 ## Regras de Contribuição
 
 - Não modificar `external/U3-SDK` diretamente.
+- Não copiar arquivos do U3-SDK; usar links no `.csproj`.
 - Não converter para GDScript.
-- Não tentar portar o SDK inteiro de uma vez.
-- Toda fatia nova deve compilar, ter testes ou documentação dos erros, e manter o escopo pequeno.
+- Não portar o SDK inteiro de uma vez.
+- Não implementar gameplay real sem fatia planejada.
+- Toda fatia nova deve compilar, ter testes ou documentação dos erros, e manter escopo pequeno.
