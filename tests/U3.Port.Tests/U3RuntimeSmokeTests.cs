@@ -363,10 +363,145 @@ public class U3RuntimeSmokeTests
         Assert.False(Vector3Ex.TryParseVector3("invalid", out _));
     }
 
+    [Fact]
+    public void MathfExConstantsAndBasicMathWork()
+    {
+        Assert.Equal(Mathf.PI * 2f, MathfEx.TAU);
+        Assert.Equal(Mathf.PI * 0.5f, MathfEx.HALF_PI);
+        Assert.Equal(9f, MathfEx.Square(3f));
+        Assert.Equal(27f, MathfEx.Cube(3f));
+        Assert.Equal(25f, MathfEx.HorizontalDistanceSquared(new Vector3(1f, 99f, 2f), new Vector3(4f, -99f, 6f)));
+    }
+
+    [Fact]
+    public void MathfExNearlyEqualOverloadsWork()
+    {
+        Assert.True(MathfEx.IsNearlyEqual(1f, 1.001f, tolerance: 0.01f));
+        Assert.True(MathfEx.IsNearlyZero(0.001f, tolerance: 0.01f));
+        Assert.True(MathfEx.IsAngleDegreesNearlyEqual(350f, 10f, tolerance: 25f));
+        Assert.True(MathfEx.IsNearlyEqual(new Color(1f, 0.5f, 0f), new Color(1.001f, 0.501f, 0.001f), tolerance: 0.01f));
+        Assert.True(MathfEx.IsNearlyEqual(new Vector3(1f, 2f, 3f), new Vector3(1.001f, 2.001f, 3.001f), tolerance: 0.01f));
+        Assert.True(MathfEx.IsNearlyEqual(Quaternion.identity, new Quaternion(0.001f, 0f, 0f, 1f), tolerance: 0.01f));
+    }
+
+    [Fact]
+    public void MathfExClampHelpersWork()
+    {
+        AssertVector3Approx(new Vector3(0f, 5f, 10f), MathfEx.Clamp(new Vector3(-1f, 5f, 11f), 0f, 10f));
+        AssertVector2Approx(new Vector2(0f, 1f), MathfEx.Clamp01(new Vector2(-1f, 2f)));
+
+        var clampedColor = MathfEx.Clamp01(new Color(-1f, 0.5f, 2f, 1f));
+        Assert.Equal(0f, clampedColor.r);
+        Assert.Equal(0.5f, clampedColor.g);
+        Assert.Equal(1f, clampedColor.b);
+        Assert.Equal(1f, clampedColor.a);
+
+        Assert.Equal((byte)5, MathfEx.Clamp((byte)10, (byte)0, (byte)5));
+        Assert.Equal((ushort)5, MathfEx.Clamp((ushort)10, (ushort)0, (ushort)5));
+    }
+
+    [Fact]
+    public void MathfExMinMaxAndIntegerClampHelpersWork()
+    {
+        Assert.Equal(1f, MathfEx.Min(1f, 2f, 3f));
+        Assert.Equal(3f, MathfEx.Max(1f, 2f, 3f));
+        Assert.Equal((ushort)1, MathfEx.Min((ushort)1, (ushort)2));
+        Assert.Equal((byte)1, MathfEx.Min((byte)1, (byte)2));
+        Assert.Equal((byte)2, MathfEx.Max((byte)1, (byte)2));
+        Assert.Equal(2u, MathfEx.Max(1u, 2u));
+
+        Assert.Equal(byte.MaxValue, MathfEx.ClampToByte(999));
+        Assert.Equal(short.MaxValue, MathfEx.ClampToShort(int.MaxValue));
+        Assert.Equal(ushort.MaxValue, MathfEx.ClampToUShort(int.MaxValue));
+        Assert.Equal(0u, MathfEx.ClampToUInt(-1));
+        Assert.Equal(int.MaxValue, MathfEx.ClampLongToInt(long.MaxValue));
+        Assert.Equal(0u, MathfEx.ClampLongToUInt(-1));
+    }
+
+    [Fact]
+    public void MathfExRoundAndTruncateHelpersWork()
+    {
+        Assert.Equal((byte)255, MathfEx.RoundAndClampToByte(999f));
+        Assert.Equal(sbyte.MaxValue, MathfEx.RoundAndClampToSByte(999f));
+        Assert.Equal(ushort.MaxValue, MathfEx.RoundAndClampToUShort(999999f));
+        Assert.Equal(short.MaxValue, MathfEx.RoundAndClampToShort(999999f));
+        Assert.Equal(0u, MathfEx.RoundAndClampToUInt(-1f));
+        Assert.Equal(2, MathfEx.TruncateToInt(2.9f));
+        Assert.Equal(-2, MathfEx.TruncateToInt(-2.9f));
+        Assert.Equal((ushort)3, MathfEx.CeilToUShort(2.1f));
+        Assert.Equal(3u, MathfEx.CeilToUInt(2.1f));
+    }
+
+    [Fact]
+    public void MathfExGeometryHelpersWork()
+    {
+        Assert.Equal(3, MathfEx.GetPageCount(21, 10));
+
+        var nearestOnSegment = MathfEx.NearestPointOnLineSegment(Vector3.zero, new Vector3(10f, 0f, 0f), new Vector3(5f, 5f, 0f));
+        AssertVector3Approx(new Vector3(5f, 0f, 0f), nearestOnSegment);
+
+        var nearestOnCircle = MathfEx.NearestPointOnCircle(Vector3.zero, Vector3.up, 2f, new Vector3(10f, 0f, 0f));
+        AssertVector3Approx(new Vector3(2f, 0f, 0f), nearestOnCircle);
+
+        var inverse = MathfEx.InverseLerp(Vector3.zero, new Vector3(10f, 20f, 40f), new Vector3(5f, 10f, 20f));
+        AssertVector3Approx(new Vector3(0.5f, 0.5f, 0.5f), inverse);
+    }
+
+    [Fact]
+    public void MathfExRayHelpersWork()
+    {
+        var projected = MathfEx.ProjectRayOntoRay(
+            Vector3.zero,
+            Vector3.up,
+            new Vector3(5f, 0f, 0f),
+            Vector3.right);
+        var distance = MathfEx.DistanceBetweenRays(
+            Vector3.zero,
+            Vector3.forward,
+            new Vector3(0f, 3f, 0f),
+            Vector3.right);
+
+        Assert.Equal(-5f, projected, 0.0001f);
+        Assert.Equal(3f, distance, 0.0001f);
+    }
+
+    [Fact]
+    public void MathfExRandomPositionHelpersStayInRange()
+    {
+        const float radius = 3f;
+
+        for (var index = 0; index < 16; index++)
+        {
+            var position = MathfEx.RandomPositionInCircle(radius);
+            var positionY = MathfEx.RandomPositionInCircleY(new Vector3(1f, 2f, 3f), radius);
+
+            Assert.True(position.magnitude <= radius + 0.0001f);
+            Assert.Equal(2f, positionY.y);
+            Assert.True(new Vector2(positionY.x - 1f, positionY.z - 3f).magnitude <= radius + 0.0001f);
+        }
+    }
+
+    [Fact]
+    public void MathfExSmoothStepHelpersWork()
+    {
+        Assert.Equal(0f, MathfEx.SmoothStep01(0f));
+        Assert.Equal(1f, MathfEx.SmoothStep01(1f));
+        Assert.Equal(0.5f, MathfEx.SmoothStep01(0.5f));
+        Assert.Equal(0f, MathfEx.SmootherStep01(0f));
+        Assert.Equal(1f, MathfEx.SmootherStep01(1f));
+        Assert.Equal(0.5f, MathfEx.SmootherStep01(0.5f));
+    }
+
     private static void AssertVector3Approx(Vector3 expected, Vector3 actual, float tolerance = 0.001f)
     {
         Assert.True(MathF.Abs(expected.x - actual.x) <= tolerance, $"Expected x {expected.x}, got {actual.x}");
         Assert.True(MathF.Abs(expected.y - actual.y) <= tolerance, $"Expected y {expected.y}, got {actual.y}");
         Assert.True(MathF.Abs(expected.z - actual.z) <= tolerance, $"Expected z {expected.z}, got {actual.z}");
+    }
+
+    private static void AssertVector2Approx(Vector2 expected, Vector2 actual, float tolerance = 0.001f)
+    {
+        Assert.True(MathF.Abs(expected.x - actual.x) <= tolerance, $"Expected x {expected.x}, got {actual.x}");
+        Assert.True(MathF.Abs(expected.y - actual.y) <= tolerance, $"Expected y {expected.y}, got {actual.y}");
     }
 }

@@ -9,7 +9,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);UNITY_STANDALONE;UNITY_STANDALONE_LINUX;UNITY_2022_3;SERVER</DefineConstants>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
@@ -69,5 +69,6 @@
 
     <Compile Include="../../external/U3-SDK/Assets/Runtime/UnityEx/QuaternionEx.cs" Link="External/U3-SDK/Assets/Runtime/UnityEx/QuaternionEx.cs" />
     <Compile Include="../../external/U3-SDK/Assets/Runtime/UnityEx/Vector3Ex.cs" Link="External/U3-SDK/Assets/Runtime/UnityEx/Vector3Ex.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnityEx/MathfEx.cs" Link="External/U3-SDK/Assets/Runtime/UnityEx/MathfEx.cs" />
   </ItemGroup>
 </Project>

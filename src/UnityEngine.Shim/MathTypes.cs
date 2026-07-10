@@ -254,6 +254,15 @@ public struct Vector3
 
         return vector - (planeNormal * (Dot(vector, planeNormal) / denominator));
     }
+
+    public static Vector3 Lerp(Vector3 from, Vector3 to, float t)
+    {
+        var clampedT = Mathf.Clamp01(t);
+        return new Vector3(
+            from.x + ((to.x - from.x) * clampedT),
+            from.y + ((to.y - from.y) * clampedT),
+            from.z + ((to.z - from.z) * clampedT));
+    }
 }
 
 public struct Quaternion
@@ -578,6 +587,13 @@ public static class Mathf
     public static float Lerp(float from, float to, float t)
     {
         return from + ((to - from) * Clamp01(t));
+    }
+
+    public static float InverseLerp(float from, float to, float value)
+    {
+        return !Approximately(from, to)
+            ? Clamp01((value - from) / (to - from))
+            : 0f;
     }
 
     public static float Abs(float value)

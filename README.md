@@ -36,9 +36,10 @@ dotnet build godot/U3GodotPort.Godot.csproj
 - `SystemNetPakReaderEx` / `SystemNetPakWriterEx`;
 - `UnityNetPakReaderEx` / `UnityNetPakWriterEx`;
 - `UnityEx/QuaternionEx.cs`;
-- `UnityEx/Vector3Ex.cs`.
+- `UnityEx/Vector3Ex.cs`;
+- `UnityEx/MathfEx.cs`.
 
-Para manter a fatia pequena, `MathfEx` ainda não foi linkado inteiro. Existe um `SDG.Unturned.MathfEx` local mínimo em `src/U3.Runtime` apenas com os métodos exigidos por `QuaternionEx` e `Vector3Ex`.
+`MathfEx` agora usa o arquivo real do SDK. O shim adiciona apenas os tipos Unity mínimos exigidos por ele, como `Random.insideUnitCircle`.
 
 ## Estratégia
 
@@ -92,11 +93,10 @@ O que já existe prova que a abordagem funciona: partes reais do SDK compilam, t
 
 ## Próximos Passos Recomendados
 
-1. Avaliar `UnityEx/MathfEx.cs` como fatia própria.
-2. Adicionar stubs mínimos para `UnityEngine.Random`, `Vector3.Lerp` e `Mathf.InverseLerp` se forem exigidos.
-3. Expandir `UnturnedDat` com helpers UnityDat de baixo risco.
-4. Mapear próxima fatia de data classes sem `MonoBehaviour`, física, UI ou assets pesados.
-5. Só depois iniciar stubs de física e assets.
+1. Avaliar `UnityEx/ColorEx.cs` ou `UnityEx/Vector2Ex.cs` como próxima fatia pequena.
+2. Expandir `UnturnedDat` com helpers UnityDat de baixo risco.
+3. Mapear próxima fatia de data classes sem `MonoBehaviour`, física, UI ou assets pesados.
+4. Só depois iniciar stubs de física e assets.
 
 ## Regras de Contribuição
 

@@ -86,6 +86,17 @@ public class UnityEngineShimTests
     }
 
     [Fact]
+    public void Vector3LerpWorks()
+    {
+        var from = new Vector3(0f, 10f, 20f);
+        var to = new Vector3(10f, 20f, 30f);
+
+        AssertVector3Approx(new Vector3(5f, 15f, 25f), Vector3.Lerp(from, to, 0.5f));
+        AssertVector3Approx(from, Vector3.Lerp(from, to, -1f));
+        AssertVector3Approx(to, Vector3.Lerp(from, to, 2f));
+    }
+
+    [Fact]
     public void MathfClampAndLerpWork()
     {
         Assert.Equal(5f, Mathf.Clamp(5f, 0f, 10f));
@@ -95,6 +106,26 @@ public class UnityEngineShimTests
         Assert.Equal(5f, Mathf.Lerp(0f, 10f, 0.5f));
         Assert.Equal(0f, Mathf.Lerp(0f, 10f, -1f));
         Assert.Equal(10f, Mathf.Lerp(0f, 10f, 2f));
+    }
+
+    [Fact]
+    public void MathfInverseLerpWorks()
+    {
+        Assert.Equal(0.5f, Mathf.InverseLerp(0f, 10f, 5f));
+        Assert.Equal(0f, Mathf.InverseLerp(0f, 10f, -1f));
+        Assert.Equal(1f, Mathf.InverseLerp(0f, 10f, 11f));
+        Assert.Equal(0f, Mathf.InverseLerp(1f, 1f, 1f));
+    }
+
+    [Fact]
+    public void RandomInsideUnitCircleStaysInsideRadius()
+    {
+        for (var index = 0; index < 32; index++)
+        {
+            var value = UnityEngine.Random.insideUnitCircle;
+
+            Assert.True(value.sqrMagnitude <= 1.0001f, $"Expected point inside unit circle, got {value.sqrMagnitude}");
+        }
     }
 
     [Fact]
