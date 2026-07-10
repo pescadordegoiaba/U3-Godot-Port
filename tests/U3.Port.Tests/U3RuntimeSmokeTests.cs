@@ -401,6 +401,25 @@ public class U3RuntimeSmokeTests
     }
 
     [Fact]
+    public void BoundsExContainsXzIgnoresVerticalAxis()
+    {
+        var bounds = new Bounds(new Vector3(10f, 20f, 30f), new Vector3(8f, 2f, 4f));
+
+        Assert.True(bounds.ContainsXZ(new Vector3(10f, 999f, 30f)));
+        Assert.True(bounds.ContainsXZ(new Vector3(6f, -999f, 28f)));
+        Assert.False(bounds.ContainsXZ(new Vector3(5.99f, 20f, 30f)));
+        Assert.False(bounds.ContainsXZ(new Vector3(10f, 20f, 32.01f)));
+    }
+
+    [Fact]
+    public void BoundsExCalculateVolumeMultipliesSizeComponents()
+    {
+        var bounds = new Bounds(Vector3.zero, new Vector3(2f, 3f, 4f));
+
+        Assert.Equal(24f, bounds.CalculateVolume());
+    }
+
+    [Fact]
     public void MathfExConstantsAndBasicMathWork()
     {
         Assert.Equal(Mathf.PI * 2f, MathfEx.TAU);
