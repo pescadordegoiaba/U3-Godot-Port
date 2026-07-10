@@ -71,5 +71,6 @@
     <Compile Include="../../external/U3-SDK/Assets/Runtime/UnityEx/Vector3Ex.cs" Link="External/U3-SDK/Assets/Runtime/UnityEx/Vector3Ex.cs" />
     <Compile Include="../../external/U3-SDK/Assets/Runtime/UnityEx/MathfEx.cs" Link="External/U3-SDK/Assets/Runtime/UnityEx/MathfEx.cs" />
     <Compile Include="../../external/U3-SDK/Assets/Runtime/UnityEx/Vector2Ex.cs" Link="External/U3-SDK/Assets/Runtime/UnityEx/Vector2Ex.cs" />
+    <Compile Include="../../external/U3-SDK/Assets/Runtime/UnityEx/ColorEx.cs" Link="External/U3-SDK/Assets/Runtime/UnityEx/ColorEx.cs" />
   </ItemGroup>
 </Project>

@@ -372,6 +372,35 @@ public class U3RuntimeSmokeTests
     }
 
     [Fact]
+    public void ColorExStaticColorsHaveZeroAlpha()
+    {
+        AssertColorApprox(new Color(0f, 0f, 0f, 0f), ColorEx.BlackZeroAlpha);
+        AssertColorApprox(new Color(1f, 1f, 1f, 0f), ColorEx.WhiteZeroAlpha);
+    }
+
+    [Fact]
+    public void ColorExDetectsNearlyBlackAndWhite()
+    {
+        Assert.True(Color.black.IsNearlyBlack());
+        Assert.True(new Color(0.001f, 0.002f, 0.0015f).IsNearlyBlack(tolerance: 0.01f));
+        Assert.False(new Color(0.1f, 0f, 0f).IsNearlyBlack());
+
+        Assert.True(Color.white.IsNearlyWhite());
+        Assert.True(new Color(0.999f, 0.998f, 0.9995f).IsNearlyWhite(tolerance: 0.01f));
+        Assert.False(new Color(0.9f, 1f, 1f).IsNearlyWhite());
+    }
+
+    [Fact]
+    public void ColorExWithAlphaPreservesRgbAndOverridesAlpha()
+    {
+        var color = new Color(0.25f, 0.5f, 0.75f, 1f);
+
+        var result = color.WithAlpha(0.125f);
+
+        AssertColorApprox(new Color(0.25f, 0.5f, 0.75f, 0.125f), result);
+    }
+
+    [Fact]
     public void MathfExConstantsAndBasicMathWork()
     {
         Assert.Equal(Mathf.PI * 2f, MathfEx.TAU);
@@ -511,5 +540,13 @@ public class U3RuntimeSmokeTests
     {
         Assert.True(MathF.Abs(expected.x - actual.x) <= tolerance, $"Expected x {expected.x}, got {actual.x}");
         Assert.True(MathF.Abs(expected.y - actual.y) <= tolerance, $"Expected y {expected.y}, got {actual.y}");
+    }
+
+    private static void AssertColorApprox(Color expected, Color actual, float tolerance = 0.001f)
+    {
+        Assert.True(MathF.Abs(expected.r - actual.r) <= tolerance, $"Expected r {expected.r}, got {actual.r}");
+        Assert.True(MathF.Abs(expected.g - actual.g) <= tolerance, $"Expected g {expected.g}, got {actual.g}");
+        Assert.True(MathF.Abs(expected.b - actual.b) <= tolerance, $"Expected b {expected.b}, got {actual.b}");
+        Assert.True(MathF.Abs(expected.a - actual.a) <= tolerance, $"Expected a {expected.a}, got {actual.a}");
     }
 }
