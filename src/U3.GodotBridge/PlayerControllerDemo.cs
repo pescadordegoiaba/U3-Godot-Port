@@ -5,7 +5,9 @@ namespace U3.GodotBridge;
 
 public sealed class PlayerControllerDemo : MonoBehaviour
 {
-    private float _jumpLogCooldown;
+    private float _verticalVelocity;
+    private float _yaw;
+    private float _pitch;
 
     public Transform? CameraTransform { get; set; }
 
@@ -13,7 +15,15 @@ public sealed class PlayerControllerDemo : MonoBehaviour
 
     public float SprintSpeed { get; set; } = 7f;
 
+    public float JumpSpeed { get; set; } = 5f;
+
+    public float Gravity { get; set; } = 14f;
+
+    public float MouseSensitivity { get; set; } = 0.08f;
+
     public float RaycastDistance { get; set; } = 20f;
+
+    public bool IsGrounded { get; private set; }
 
     public override void Start()
     {
@@ -22,35 +32,60 @@ public sealed class PlayerControllerDemo : MonoBehaviour
 
     public override void Update()
     {
+        UpdateLook();
+        UpdateGrounded();
+        UpdateMovement();
+
+        if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Mouse0))
+        {
+            CastInteractionRay();
+        }
+    }
+
+    private void UpdateLook()
+    {
+        _yaw += Input.GetAxisRaw("Mouse X") * MouseSensitivity;
+        _pitch = Mathf.Clamp(_pitch - (Input.GetAxisRaw("Mouse Y") * MouseSensitivity), -80f, 80f);
+        transform.eulerAngles = new Vector3(0f, _yaw, 0f);
+
+        if (CameraTransform is not null)
+        {
+            CameraTransform.position = transform.position + new Vector3(0f, 1.4f, 0f);
+            CameraTransform.eulerAngles = new Vector3(_pitch, _yaw, 0f);
+        }
+    }
+
+    private void UpdateGrounded()
+    {
+        IsGrounded = Physics.CheckSphere(transform.position + new Vector3(0f, -0.82f, 0f), 0.28f);
+        if (IsGrounded && _verticalVelocity < 0f)
+        {
+            _verticalVelocity = -1f;
+        }
+    }
+
+    private void UpdateMovement()
+    {
         var horizontal = Input.GetAxisRaw("Horizontal");
         var vertical = Input.GetAxisRaw("Vertical");
-        var move = new Vector3(horizontal, 0f, -vertical);
+        var planarInput = new Vector3(horizontal, 0f, vertical);
+        var move = (transform.right * planarInput.x) + (transform.forward * planarInput.z);
         if (move.sqrMagnitude > 1f)
         {
             move.Normalize();
         }
 
         var speed = Input.GetKey(KeyCode.LeftShift) ? SprintSpeed : WalkSpeed;
-        transform.position += move * speed * Time.deltaTime;
-
-        if (CameraTransform is not null)
+        var motion = move * speed * Time.deltaTime;
+        if (Input.GetKeyDown(KeyCode.Space) && IsGrounded)
         {
-            CameraTransform.position = transform.position + new Vector3(0f, 1.4f, 5f);
-            CameraTransform.LookAt(transform.position + new Vector3(0f, 1f, 0f));
+            _verticalVelocity = JumpSpeed;
+            Debug.Log("PlayerControllerDemo.Jump");
         }
 
-        if (Input.GetKeyDown(KeyCode.Space) && _jumpLogCooldown <= 0f)
-        {
-            Debug.Log("PlayerControllerDemo.Jump requested");
-            _jumpLogCooldown = 0.25f;
-        }
-
-        _jumpLogCooldown = Mathf.Max(0f, _jumpLogCooldown - Time.deltaTime);
-
-        if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Mouse0))
-        {
-            CastInteractionRay();
-        }
+        _verticalVelocity -= Gravity * Time.deltaTime;
+        motion.y = _verticalVelocity * Time.deltaTime;
+        transform.position += motion;
     }
 
     private void CastInteractionRay()
@@ -60,6 +95,8 @@ public sealed class PlayerControllerDemo : MonoBehaviour
         if (Physics.Raycast(ray, out var hit, RaycastDistance))
         {
             Debug.Log($"PlayerControllerDemo.Raycast hit {hit.ToDebugString()}");
+            var interactable = hit.collider?.GetComponent<InteractableDemo>();
+            interactable?.Interact();
         }
         else
         {

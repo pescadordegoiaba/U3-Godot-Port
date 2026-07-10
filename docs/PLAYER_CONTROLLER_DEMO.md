@@ -4,7 +4,7 @@
 
 - `W/A/S/D` or arrows: move
 - `LeftShift`: sprint
-- `Space`: jump request log
+- `Space`: jump when grounded
 - `E` or left mouse button: raycast from the camera
 
 ## How to Run
@@ -19,9 +19,9 @@ The demo creates a fake Unity scene from `GodotHost`: ground, target objects, a 
 
 - Movement is kinematic, not real rigidbody simulation.
 - Jump only logs intent.
-- Raycast uses Godot physics when running in Godot, but overlap queries are still passive.
+- Raycast and overlap queries use Godot physics when running in Godot.
 - No real Unturned gameplay or assets are loaded.
 
 ## Next Step
 
-Add mouse-look and a simple grounded check using Godot raycasts.
+Improve capsule orientation and add debug visualization.

@@ -19,10 +19,10 @@
 
 ## Limitations
 
-- Mouse look is not implemented yet.
+- Mouse look is implemented through per-frame mouse delta.
 - `mousePosition` is minimal and not intended as full Unity compatibility.
 - Axis smoothing is not implemented; `GetAxis` and `GetAxisRaw` currently match.
 
 ## Next Step
 
-Add mouse-look deltas and configurable key bindings once the player movement loop stabilizes.
+Add configurable key bindings once the player movement loop stabilizes.

@@ -29,7 +29,7 @@ No evaluated files were refused in this sprint.
 
 ## Player Demo
 
-`GodotHost` now creates a small scene with a floor, targets, player, camera and light. `PlayerControllerDemo` moves with `W/A/S/D`, sprints with `LeftShift`, logs jump requests with `Space`, and raycasts with `E` or left mouse button.
+`GodotHost` now creates a small scene with a floor, data-driven targets, player, camera and light. `PlayerControllerDemo` moves with `W/A/S/D`, sprints with `LeftShift`, looks with the mouse, jumps with `Space`, and interacts/raycasts with `E` or left mouse button.
 
 ## How to Test
 
@@ -46,15 +46,15 @@ Manual Godot test: open `godot/project.godot` in Godot 4 .NET/C# and run `scenes
 ## Limitations
 
 - No real rigidbody simulation.
-- Godot overlap queries are not implemented yet.
+- Godot overlap queries are implemented, but approximate.
 - Capsule orientation is approximate.
-- Input has no mouse-look delta yet.
+- Input has mouse-look delta, but no configurable bindings yet.
 - The demo is not Unturned gameplay.
 
 ## Recommended Next Steps
 
-1. Implement Godot `OverlapSphere` with `IntersectShape`.
-2. Add a simple grounded check and real jump impulse for the demo player.
-3. Add mouse-look support to `GodotInputBridge`.
+1. Improve capsule orientation in Godot queries.
+2. Add collision debug visualization.
+3. Add configurable input bindings.
 4. Evaluate the next small UnityEx helper that depends only on passive physics data.
 5. Add collision debug visualization toggles in the Godot demo.

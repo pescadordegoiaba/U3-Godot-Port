@@ -120,6 +120,10 @@ public interface IPhysicsBackend
 
     Collider[] OverlapSphere(Vector3 position, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
 
+    Collider[] OverlapBox(Vector3 center, Vector3 halfExtents, Quaternion orientation, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+
+    Collider[] OverlapCapsule(Vector3 point0, Vector3 point1, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+
     int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
 
     int OverlapBoxNonAlloc(Vector3 center, Vector3 halfExtents, Collider[] results, Quaternion orientation, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
@@ -127,6 +131,10 @@ public interface IPhysicsBackend
     int OverlapCapsuleNonAlloc(Vector3 point0, Vector3 point1, float radius, Collider[] results, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
 
     bool CheckSphere(Vector3 position, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+
+    bool CheckBox(Vector3 center, Vector3 halfExtents, Quaternion orientation, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+
+    bool CheckCapsule(Vector3 start, Vector3 end, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
 }
 
 public enum QueryTriggerInteraction
@@ -152,6 +160,13 @@ public enum CollisionDetectionMode
     ContinuousSpeculative
 }
 
+public enum RigidbodyInterpolation
+{
+    None,
+    Interpolate,
+    Extrapolate
+}
+
 [Flags]
 public enum RigidbodyConstraints
 {
@@ -174,6 +189,14 @@ public class Collider : Component
     public bool enabled { get; set; } = true;
 
     public bool isTrigger { get; set; }
+
+    public PhysicMaterial? sharedMaterial { get; set; }
+
+    public PhysicMaterial? material
+    {
+        get => sharedMaterial;
+        set => sharedMaterial = value;
+    }
 
     public virtual Bounds bounds
     {
@@ -306,6 +329,8 @@ public class CapsuleCollider : Collider
 
 public class Rigidbody : Component
 {
+    private bool _sleeping;
+
     public Vector3 position { get; set; }
 
     public Quaternion rotation { get; set; } = Quaternion.identity;
@@ -320,9 +345,15 @@ public class Rigidbody : Component
 
     public bool useGravity { get; set; } = true;
 
+    public bool detectCollisions { get; set; } = true;
+
+    public bool freezeRotation { get; set; }
+
     public RigidbodyConstraints constraints { get; set; }
 
     public CollisionDetectionMode collisionDetectionMode { get; set; }
+
+    public RigidbodyInterpolation interpolation { get; set; }
 
     public void MovePosition(Vector3 position)
     {
@@ -338,10 +369,78 @@ public class Rigidbody : Component
 
     public void AddForce(Vector3 force)
     {
+        AddForce(force, ForceMode.Force);
     }
 
     public void AddForce(Vector3 force, ForceMode mode)
     {
+        if (isKinematic)
+        {
+            return;
+        }
+
+        var divisor = mass <= 0f ? 1f : mass;
+        velocity += mode switch
+        {
+            ForceMode.Acceleration => force * Time.deltaTime,
+            ForceMode.Impulse => force / divisor,
+            ForceMode.VelocityChange => force,
+            _ => (force / divisor) * Time.deltaTime
+        };
+        _sleeping = false;
+    }
+
+    public void Sleep()
+    {
+        _sleeping = true;
+    }
+
+    public void WakeUp()
+    {
+        _sleeping = false;
+    }
+
+    public bool IsSleeping()
+    {
+        return _sleeping;
+    }
+}
+
+public class PhysicMaterial : Object
+{
+    public float bounciness { get; set; }
+
+    public float dynamicFriction { get; set; } = 0.6f;
+
+    public float staticFriction { get; set; } = 0.6f;
+}
+
+public class CharacterController : Collider
+{
+    public float height { get; set; } = 2f;
+
+    public float radius { get; set; } = 0.5f;
+
+    public Vector3 center { get; set; }
+
+    public bool isGrounded { get; private set; }
+
+    public Vector3 velocity { get; private set; }
+
+    public override Bounds bounds => new(transform.TransformPoint(center), new Vector3(radius * 2f, height, radius * 2f));
+
+    public Vector3 Move(Vector3 motion)
+    {
+        transform.position += motion;
+        velocity = Time.deltaTime > 0f ? motion / Time.deltaTime : motion;
+        isGrounded = motion.y <= 0f && Physics.CheckSphere(transform.position + center + Vector3.down * ((height * 0.5f) + 0.05f), radius * 0.95f);
+        return motion;
+    }
+
+    public bool SimpleMove(Vector3 speed)
+    {
+        Move(speed * Time.deltaTime);
+        return isGrounded;
     }
 }
 
@@ -465,6 +564,44 @@ public static class Physics
             .ToArray();
     }
 
+    public static Collider[] OverlapBox(Vector3 center, Vector3 halfExtents)
+    {
+        return OverlapBox(center, halfExtents, Quaternion.identity, ~0, QueryTriggerInteraction.UseGlobal);
+    }
+
+    public static Collider[] OverlapBox(Vector3 center, Vector3 halfExtents, Quaternion orientation, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+    {
+        if (_backend is not null)
+        {
+            return _backend.OverlapBox(center, halfExtents, orientation, layerMask, queryTriggerInteraction);
+        }
+
+        var bounds = new Bounds(center, halfExtents * 2f);
+        return AllColliders
+            .Where(collider => ColliderMatches(collider, layerMask, queryTriggerInteraction))
+            .Where(collider => collider.bounds.Intersects(bounds))
+            .ToArray();
+    }
+
+    public static Collider[] OverlapCapsule(Vector3 point0, Vector3 point1, float radius)
+    {
+        return OverlapCapsule(point0, point1, radius, ~0, QueryTriggerInteraction.UseGlobal);
+    }
+
+    public static Collider[] OverlapCapsule(Vector3 point0, Vector3 point1, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+    {
+        if (_backend is not null)
+        {
+            return _backend.OverlapCapsule(point0, point1, radius, layerMask, queryTriggerInteraction);
+        }
+
+        var bounds = CapsuleBounds(point0, point1, radius);
+        return AllColliders
+            .Where(collider => ColliderMatches(collider, layerMask, queryTriggerInteraction))
+            .Where(collider => collider.bounds.Intersects(bounds))
+            .ToArray();
+    }
+
     public static int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
     {
         if (_backend is not null)
@@ -482,12 +619,12 @@ public static class Physics
             return _backend.OverlapBoxNonAlloc(center, halfExtents, results, orientation, layerMask, queryTriggerInteraction);
         }
 
-        var bounds = new Bounds(center, halfExtents * 2f);
-        var hits = AllColliders
-            .Where(collider => ColliderMatches(collider, layerMask, queryTriggerInteraction))
-            .Where(collider => collider.bounds.Intersects(bounds))
-            .ToArray();
-        return CopyResults(hits, results);
+        return CopyResults(OverlapBox(center, halfExtents, orientation, layerMask, queryTriggerInteraction), results);
+    }
+
+    public static int OverlapBoxNonAlloc(Vector3 center, Vector3 halfExtents, Collider[] results)
+    {
+        return OverlapBoxNonAlloc(center, halfExtents, results, Quaternion.identity, ~0, QueryTriggerInteraction.UseGlobal);
     }
 
     public static int OverlapCapsuleNonAlloc(Vector3 point0, Vector3 point1, float radius, Collider[] results, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
@@ -497,15 +634,12 @@ public static class Physics
             return _backend.OverlapCapsuleNonAlloc(point0, point1, radius, results, layerMask, queryTriggerInteraction);
         }
 
-        var bounds = new Bounds((point0 + point1) * 0.5f, Vector3.zero);
-        bounds.Encapsulate(point0);
-        bounds.Encapsulate(point1);
-        bounds.Expand(radius * 2f);
-        var hits = AllColliders
-            .Where(collider => ColliderMatches(collider, layerMask, queryTriggerInteraction))
-            .Where(collider => collider.bounds.Intersects(bounds))
-            .ToArray();
-        return CopyResults(hits, results);
+        return CopyResults(OverlapCapsule(point0, point1, radius, layerMask, queryTriggerInteraction), results);
+    }
+
+    public static int OverlapCapsuleNonAlloc(Vector3 point0, Vector3 point1, float radius, Collider[] results)
+    {
+        return OverlapCapsuleNonAlloc(point0, point1, radius, results, ~0, QueryTriggerInteraction.UseGlobal);
     }
 
     public static bool CheckSphere(Vector3 position, float radius, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
@@ -516,6 +650,36 @@ public static class Physics
         }
 
         return OverlapSphere(position, radius, layerMask, queryTriggerInteraction).Length > 0;
+    }
+
+    public static bool CheckBox(Vector3 center, Vector3 halfExtents)
+    {
+        return CheckBox(center, halfExtents, Quaternion.identity, ~0, QueryTriggerInteraction.UseGlobal);
+    }
+
+    public static bool CheckBox(Vector3 center, Vector3 halfExtents, Quaternion orientation, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+    {
+        if (_backend is not null)
+        {
+            return _backend.CheckBox(center, halfExtents, orientation, layerMask, queryTriggerInteraction);
+        }
+
+        return OverlapBox(center, halfExtents, orientation, layerMask, queryTriggerInteraction).Length > 0;
+    }
+
+    public static bool CheckCapsule(Vector3 start, Vector3 end, float radius)
+    {
+        return CheckCapsule(start, end, radius, ~0, QueryTriggerInteraction.UseGlobal);
+    }
+
+    public static bool CheckCapsule(Vector3 start, Vector3 end, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+    {
+        if (_backend is not null)
+        {
+            return _backend.CheckCapsule(start, end, radius, layerMask, queryTriggerInteraction);
+        }
+
+        return OverlapCapsule(start, end, radius, layerMask, queryTriggerInteraction).Length > 0;
     }
 
     public static void IgnoreCollision(Collider collider1, Collider collider2, bool ignore = true)
@@ -596,6 +760,15 @@ public static class Physics
         var count = Math.Min(source.Length, results.Length);
         Array.Copy(source, results, count);
         return count;
+    }
+
+    private static Bounds CapsuleBounds(Vector3 point0, Vector3 point1, float radius)
+    {
+        var bounds = new Bounds((point0 + point1) * 0.5f, Vector3.zero);
+        bounds.Encapsulate(point0);
+        bounds.Encapsulate(point1);
+        bounds.Expand(radius * 2f);
+        return bounds;
     }
 
     private static bool RayIntersectsBounds(Ray ray, Bounds bounds, float maxDistance, out float distance)

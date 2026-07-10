@@ -13,8 +13,8 @@ O projeto já tem:
 - `U3.Runtime` compilando fatias reais do U3-SDK sem copiar arquivos;
 - `U3.GodotBridge` sincronizando `GameObject -> Node3D`, hierarquia, mesh/material, câmera, luz, colliders e raycast via Godot Physics;
 - projeto Godot 4 C# em `godot/`;
-- demo mínima jogável com `PlayerControllerDemo`;
-- testes cobrindo shim, NetPak, UnityNetPak, UnityEx helpers, physics/input backend e a primeira demo foundation.
+- demo mínima jogável com `PlayerControllerDemo`, mouse-look, jump, interação e spawns por dados;
+- testes cobrindo shim, NetPak, UnityNetPak, UnityEx helpers, physics/input backend, player demo e data-driven spawns.
 
 Validação atual:
 
@@ -24,7 +24,7 @@ dotnet test U3GodotPort.sln
 dotnet build godot/U3GodotPort.Godot.csproj
 ```
 
-Último estado verificado: `145/145` testes passando e builds .NET/Godot passando.
+Último estado verificado: `155/155` testes passando e builds .NET/Godot passando.
 
 ## Fatias Reais do U3-SDK Linkadas
 
@@ -57,8 +57,10 @@ O `GodotHost` cria uma cena simples com chão, alvos, player, câmera e luz. O p
 
 - `W/A/S/D`: mover;
 - `LeftShift`: sprint;
-- `Space`: log de jump;
-- `E` ou mouse esquerdo: raycast da câmera para frente.
+- mouse: olhar;
+- `Space`: pular quando grounded;
+- `E` ou mouse esquerdo: raycast/interação;
+- `Escape`: liberar mouse.
 
 Para testar manualmente:
 
@@ -81,9 +83,9 @@ Isso é uma demo técnica, não gameplay real do Unturned.
 
 Principais blocos pendentes:
 
-- física real de `Rigidbody`, colisões, triggers e overlap queries completas;
-- `CharacterController` ou movimento de player mais próximo de Unity;
-- mouse-look e input configurável;
+- física real de `Rigidbody`, colisões e triggers;
+- `CharacterController` mais próximo de Unity;
+- input configurável;
 - assets reais: `Resources`, `AssetBundle`, referências e carregamento de conteúdo;
 - `SceneManager` real e fluxo de mundo;
 - `Animator` funcional;
@@ -103,13 +105,13 @@ Estimativa técnica atual:
 - fatia real do U3-SDK compilada: ainda menos de 10%;
 - gameplay real: 0-5%, apenas uma demo técnica própria.
 
-O avanço importante é que agora existe um loop mínimo jogável: input fake, movimento cinemático, colliders, raycast Godot e objetos visuais. Ainda falta praticamente todo o código de gameplay real do U3/Unturned.
+O avanço importante é que agora existe um loop mínimo jogável: input fake, mouse-look, movimento cinemático, jump simples, colliders, overlap/raycast Godot, interação e objetos visuais criados por dados `.dat` fake. Ainda falta praticamente todo o código de gameplay real do U3/Unturned.
 
 ## Próximos Passos Recomendados
 
-1. Implementar `OverlapSphere` no Godot com `IntersectShape`.
-2. Adicionar grounded check e jump simples no `PlayerControllerDemo`.
-3. Adicionar mouse-look ao `GodotInputBridge`.
+1. Melhorar orientação de cápsula nas queries Godot.
+2. Adicionar visualização/debug de collision shapes.
+3. Adicionar input bindings configuráveis.
 4. Avaliar a próxima fatia UnityEx pequena dependente de física passiva.
 5. Mapear data classes do U3-SDK que possam compilar sem assets, UI, networking ou gameplay pesado.
 

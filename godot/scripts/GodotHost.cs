@@ -1,3 +1,4 @@
+using System.Linq;
 using Godot;
 using U3.GodotBridge;
 using UnityBoxCollider = UnityEngine.BoxCollider;
@@ -14,8 +15,8 @@ using UnityMesh = UnityEngine.Mesh;
 using UnityMeshFilter = UnityEngine.MeshFilter;
 using UnityMeshRenderer = UnityEngine.MeshRenderer;
 using UnityPhysics = UnityEngine.Physics;
+using UnityResources = UnityEngine.Resources;
 using UnityRigidbody = UnityEngine.Rigidbody;
-using UnitySphereCollider = UnityEngine.SphereCollider;
 using UnityVector3 = UnityEngine.Vector3;
 
 public partial class GodotHost : Node
@@ -32,9 +33,16 @@ public partial class GodotHost : Node
 
         _runtime.Initialize();
         UnityInput.SetBackend(_inputBridge);
+        UnityEngine.Cursor.lockState = UnityEngine.CursorLockMode.Locked;
+        UnityEngine.Cursor.visible = false;
         UnityPhysics.SetBackend(new GodotPhysicsBridge(_worldRoot, _sceneBridge));
         CreatePlayableDemo(_worldRoot);
-        UnityDebug.Log("GodotHost ready");
+        UnityDebug.Log("GodotHost ready. WASD move, Shift sprint, mouse look, Space jump, E/Mouse0 interact, Escape releases mouse.");
+    }
+
+    public override void _Input(InputEvent @event)
+    {
+        _inputBridge.HandleInputEvent(@event);
     }
 
     public override void _Process(double delta)
@@ -42,6 +50,7 @@ public partial class GodotHost : Node
         _inputBridge.UpdateFrame();
         _runtime.Tick((float)delta);
         _sceneBridge.SyncAll();
+        _inputBridge.EndFrame();
     }
 
     public override void _PhysicsProcess(double delta)
@@ -59,20 +68,16 @@ public partial class GodotHost : Node
 
     private void CreatePlayableDemo(Node parent)
     {
+        UnityResources.ClearRegistered();
+        DemoAssetRegistry.RegisterDefaults();
+
         var floor = CreateBox("Ground", new UnityVector3(0f, -0.25f, 0f), new UnityVector3(14f, 0.5f, 14f), new UnityColor(0.35f, 0.35f, 0.35f));
         var floorCollider = floor.AddComponent<UnityBoxCollider>();
         floorCollider.size = UnityVector3.one;
 
-        var targetA = CreateBox("TargetBox", new UnityVector3(-2.5f, 0.75f, -4f), UnityVector3.one, UnityColor.green);
-        targetA.AddComponent<UnityBoxCollider>().size = UnityVector3.one;
-
-        var targetB = CreateSphere("TargetSphere", new UnityVector3(2.5f, 0.75f, -4f), new UnityVector3(1f, 1f, 1f), UnityColor.blue);
-        targetB.AddComponent<UnitySphereCollider>().radius = 0.5f;
-
-        var targetC = CreateBox("TargetCapsule", new UnityVector3(0f, 1f, -7f), new UnityVector3(0.7f, 1.8f, 0.7f), new UnityColor(1f, 0.7f, 0.2f));
-        var capsule = targetC.AddComponent<UnityCapsuleCollider>();
-        capsule.radius = 0.35f;
-        capsule.height = 1.8f;
+        var demoObjects = DemoAssetRegistry.SpawnPaths
+            .Select(path => DemoDatLoader.LoadDefinition(path).CreateGameObject())
+            .ToArray();
 
         var player = CreateBox("Player", new UnityVector3(0f, 0.75f, 3f), new UnityVector3(0.65f, 1.5f, 0.65f), new UnityColor(0.9f, 0.2f, 0.2f));
         var playerCollider = player.AddComponent<UnityCapsuleCollider>();
@@ -82,8 +87,8 @@ public partial class GodotHost : Node
         playerBody.isKinematic = true;
 
         var camera = new UnityGameObject("MainCamera");
-        camera.transform.position = player.transform.position + new UnityVector3(0f, 1.4f, 5f);
-        camera.transform.LookAt(player.transform.position + new UnityVector3(0f, 1f, 0f));
+        camera.transform.position = player.transform.position + new UnityVector3(0f, 1.4f, 0f);
+        camera.transform.eulerAngles = new UnityVector3(0f, 180f, 0f);
         var cameraComponent = camera.AddComponent<UnityCamera>();
         cameraComponent.fieldOfView = 65f;
         cameraComponent.nearClipPlane = 0.1f;
@@ -99,7 +104,7 @@ public partial class GodotHost : Node
         light.intensity = 1.5f;
         light.color = UnityColor.white;
 
-        foreach (var gameObject in new[] { floor, targetA, targetB, targetC, player, camera, sunLight })
+        foreach (var gameObject in new[] { floor, player, camera, sunLight }.Concat(demoObjects))
         {
             _sceneBridge.CreateNode(gameObject, parent);
         }

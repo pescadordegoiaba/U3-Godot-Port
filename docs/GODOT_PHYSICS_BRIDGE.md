@@ -20,7 +20,7 @@
 ## Limitations
 
 - No real Unity rigidbody simulation.
-- `OverlapSphere` and non-alloc overlap queries are passive in the Godot backend for now.
+- Overlap queries are implemented through Godot `IntersectShape`, but remain approximate compared with Unity.
 - Capsule direction is not fully mapped to Godot shape orientation.
 - Layer names are still fake; numeric layer masks are mapped directly.
 
@@ -30,4 +30,4 @@ Open `godot/project.godot` in Godot 4 .NET and run `scenes/Main.tscn`. Use `E` o
 
 ## Next Step
 
-Add Godot `IntersectShape` support for `OverlapSphere` and then box/capsule overlaps.
+Improve capsule orientation and add debug visualization for physics shapes.
