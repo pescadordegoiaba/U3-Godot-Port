@@ -193,14 +193,14 @@ public class GameObject : Object
     }
 
     public T AddComponent<T>()
-        where T : Component, new()
+        where T : Component
     {
         if (typeof(T) == typeof(Transform))
         {
             return (T)(Component)transform;
         }
 
-        var component = new T();
+        var component = (T)Activator.CreateInstance(typeof(T))!;
         AddExistingComponent(component);
         return component;
     }

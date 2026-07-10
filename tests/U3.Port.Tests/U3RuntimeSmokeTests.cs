@@ -492,6 +492,90 @@ public class U3RuntimeSmokeTests
     }
 
     [Fact]
+    public void TransformExGetOrAddComponentReusesExistingComponent()
+    {
+        var gameObject = new GameObject("transform-ex");
+        var first = gameObject.transform.GetOrAddComponent<TransformExTestComponent>();
+
+        var second = gameObject.transform.GetOrAddComponent<TransformExTestComponent>();
+
+        Assert.Same(first, second);
+        Assert.Same(first, gameObject.GetComponent<TransformExTestComponent>());
+    }
+
+    [Fact]
+    public void TransformExFindsChildrenWithMatchingName()
+    {
+        var root = new GameObject("root");
+        var matchingDirect = new GameObject("target");
+        var branch = new GameObject("branch");
+        var matchingNested = new GameObject("target");
+        matchingDirect.transform.SetParent(root.transform);
+        branch.transform.SetParent(root.transform);
+        matchingNested.transform.SetParent(branch.transform);
+
+        var gameObjects = new List<GameObject>();
+        var transforms = new List<Transform>();
+
+        root.transform.FindAllChildrenWithName("target", gameObjects);
+        root.transform.FindAllChildrenWithName("target", transforms);
+
+        Assert.Equal(2, gameObjects.Count);
+        Assert.Contains(matchingDirect, gameObjects);
+        Assert.Contains(matchingNested, gameObjects);
+        Assert.Equal(2, transforms.Count);
+    }
+
+    [Fact]
+    public void TransformExHierarchyHelpersWork()
+    {
+        var root = new GameObject("root");
+        var child = new GameObject("child");
+        var grandchild = new GameObject("grandchild");
+        child.transform.SetParent(root.transform);
+        grandchild.transform.SetParent(child.transform);
+
+        Assert.Same(child.transform, grandchild.transform.GetChildOfParent(root.transform));
+#pragma warning disable CS0618
+        Assert.Same(root.transform, grandchild.transform.GetRootTransform());
+#pragma warning restore CS0618
+        Assert.Equal("root/child/grandchild", grandchild.transform.GetSceneHierarchyPath());
+        Assert.Equal("root\n\tchild\n\t\tgrandchild", root.transform.DumpChildren());
+        Assert.Same(child.transform, new[] { root.transform }.FindChild("child"));
+    }
+
+    [Fact]
+    public void TransformExDestroyComponentIfExistsRemovesComponent()
+    {
+        var gameObject = new GameObject("destroy-component");
+        gameObject.AddComponent<TransformExTestComponent>();
+
+        gameObject.transform.DestroyComponentIfExists<TransformExTestComponent>();
+
+        Assert.Null(gameObject.GetComponent<TransformExTestComponent>());
+        Assert.NotNull(gameObject.transform);
+    }
+
+    [Fact]
+    public void TransformExRoundingAndRotationHelpersWork()
+    {
+        var gameObject = new GameObject("rotation");
+        var transform = gameObject.transform;
+
+        transform.SetRotation_RoundIfNearlyAxisAligned(Quaternion.Euler(0f, 89.98f, 0f), tolerance: 0.1f);
+        AssertVector3Approx(Vector3.right, transform.forward, 0.001f);
+
+        transform.SetLocalScale_RoundIfNearlyEqualToOne(new Vector3(0.999f, -0.999f, 0.5f), tolerance: 0.01f);
+        AssertVector3Approx(new Vector3(1f, -1f, 0.5f), transform.localScale);
+
+        transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+        var localRotation = transform.InverseTransformRotation(Quaternion.identity);
+        var worldRotation = transform.TransformRotation(localRotation);
+
+        AssertVector3Approx(Vector3.forward, worldRotation * Vector3.forward, 0.001f);
+    }
+
+    [Fact]
     public void MathfExConstantsAndBasicMathWork()
     {
         Assert.Equal(Mathf.PI * 2f, MathfEx.TAU);
@@ -639,5 +723,9 @@ public class U3RuntimeSmokeTests
         Assert.True(MathF.Abs(expected.g - actual.g) <= tolerance, $"Expected g {expected.g}, got {actual.g}");
         Assert.True(MathF.Abs(expected.b - actual.b) <= tolerance, $"Expected b {expected.b}, got {actual.b}");
         Assert.True(MathF.Abs(expected.a - actual.a) <= tolerance, $"Expected a {expected.a}, got {actual.a}");
+    }
+
+    private sealed class TransformExTestComponent : Component
+    {
     }
 }
