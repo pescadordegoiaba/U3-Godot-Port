@@ -4,7 +4,9 @@
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
     <ProjectReference Include="../../src/U3.Runtime/U3.Runtime.csproj" />
+    <ProjectReference Include="../../src/TMPro.Shim/TMPro.Shim.csproj" />
     <ProjectReference Include="../../src/UnityEngine.Shim/UnityEngine.Shim.csproj" />
+    <ProjectReference Include="../../src/UnityEngine.UI.Shim/UnityEngine.UI.Shim.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

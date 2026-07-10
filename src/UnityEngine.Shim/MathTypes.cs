@@ -439,6 +439,21 @@ public struct Quaternion
             : identity;
     }
 
+    public static Quaternion Inverse(Quaternion rotation)
+    {
+        var sqrMagnitude = (rotation.x * rotation.x) + (rotation.y * rotation.y) + (rotation.z * rotation.z) + (rotation.w * rotation.w);
+        if (sqrMagnitude < 1E-06f)
+        {
+            return identity;
+        }
+
+        return new Quaternion(
+            -rotation.x / sqrMagnitude,
+            -rotation.y / sqrMagnitude,
+            -rotation.z / sqrMagnitude,
+            rotation.w / sqrMagnitude);
+    }
+
     public static Quaternion operator *(Quaternion left, Quaternion right)
     {
         return new Quaternion(

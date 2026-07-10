@@ -112,12 +112,203 @@ public struct RaycastHit
     public readonly Rigidbody? rigidbody => collider?.gameObject.GetComponent<Rigidbody>();
 }
 
+public enum QueryTriggerInteraction
+{
+    UseGlobal,
+    Ignore,
+    Collide
+}
+
+public enum ForceMode
+{
+    Force,
+    Acceleration,
+    Impulse,
+    VelocityChange
+}
+
+public enum CollisionDetectionMode
+{
+    Discrete,
+    Continuous,
+    ContinuousDynamic,
+    ContinuousSpeculative
+}
+
+[Flags]
+public enum RigidbodyConstraints
+{
+    None = 0,
+    FreezePositionX = 1 << 1,
+    FreezePositionY = 1 << 2,
+    FreezePositionZ = 1 << 3,
+    FreezeRotationX = 1 << 4,
+    FreezeRotationY = 1 << 5,
+    FreezeRotationZ = 1 << 6,
+    FreezePosition = FreezePositionX | FreezePositionY | FreezePositionZ,
+    FreezeRotation = FreezeRotationX | FreezeRotationY | FreezeRotationZ,
+    FreezeAll = FreezePosition | FreezeRotation
+}
+
 public class Collider : Component
 {
+    public bool enabled { get; set; } = true;
+
+    public bool isTrigger { get; set; }
+
+    public Bounds bounds { get; set; } = new(Vector3.zero, Vector3.zero);
+
+    public Rigidbody? attachedRigidbody { get; internal set; }
+
+    public virtual Vector3 ClosestPoint(Vector3 position)
+    {
+        return bounds.ClosestPoint(position);
+    }
+
+    public virtual bool Raycast(Ray ray, out RaycastHit hitInfo, float maxDistance)
+    {
+        hitInfo = default;
+        return false;
+    }
+}
+
+public class BoxCollider : Collider
+{
+    public Vector3 center { get; set; }
+
+    public Vector3 size { get; set; } = Vector3.one;
+}
+
+public class SphereCollider : Collider
+{
+    public Vector3 center { get; set; }
+
+    public float radius { get; set; } = 0.5f;
+}
+
+public class CapsuleCollider : Collider
+{
+    public Vector3 center { get; set; }
+
+    public float radius { get; set; } = 0.5f;
+
+    public float height { get; set; } = 2f;
+
+    public int direction { get; set; } = 1;
 }
 
 public class Rigidbody : Component
 {
+    public Vector3 position { get; set; }
+
+    public Quaternion rotation { get; set; } = Quaternion.identity;
+
+    public Vector3 velocity { get; set; }
+
+    public Vector3 angularVelocity { get; set; }
+
+    public float mass { get; set; } = 1f;
+
+    public bool isKinematic { get; set; }
+
+    public bool useGravity { get; set; } = true;
+
+    public RigidbodyConstraints constraints { get; set; }
+
+    public CollisionDetectionMode collisionDetectionMode { get; set; }
+
+    public void MovePosition(Vector3 position)
+    {
+        this.position = position;
+        transform.position = position;
+    }
+
+    public void MoveRotation(Quaternion rotation)
+    {
+        this.rotation = rotation;
+        transform.rotation = rotation;
+    }
+
+    public void AddForce(Vector3 force)
+    {
+    }
+
+    public void AddForce(Vector3 force, ForceMode mode)
+    {
+    }
+}
+
+public static class Physics
+{
+    public static Vector3 gravity { get; set; } = new(0f, -9.81f, 0f);
+
+    public static bool Raycast(Ray ray)
+    {
+        return false;
+    }
+
+    public static bool Raycast(Ray ray, float maxDistance)
+    {
+        return false;
+    }
+
+    public static bool Raycast(Ray ray, out RaycastHit hitInfo)
+    {
+        hitInfo = default;
+        return false;
+    }
+
+    public static bool Raycast(Ray ray, out RaycastHit hitInfo, float maxDistance)
+    {
+        hitInfo = default;
+        return false;
+    }
+
+    public static bool Raycast(Ray ray, out RaycastHit hitInfo, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+    {
+        hitInfo = default;
+        return false;
+    }
+
+    public static bool Raycast(Vector3 origin, Vector3 direction, out RaycastHit hitInfo, float maxDistance, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+    {
+        hitInfo = default;
+        return false;
+    }
+
+    public static RaycastHit[] RaycastAll(Ray ray, float maxDistance = float.PositiveInfinity, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+    {
+        return Array.Empty<RaycastHit>();
+    }
+
+    public static Collider[] OverlapSphere(Vector3 position, float radius, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+    {
+        return Array.Empty<Collider>();
+    }
+
+    public static int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+    {
+        return 0;
+    }
+
+    public static int OverlapBoxNonAlloc(Vector3 center, Vector3 halfExtents, Collider[] results, Quaternion orientation, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+    {
+        return 0;
+    }
+
+    public static int OverlapCapsuleNonAlloc(Vector3 point0, Vector3 point1, float radius, Collider[] results, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+    {
+        return 0;
+    }
+
+    public static bool CheckSphere(Vector3 position, float radius, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+    {
+        return false;
+    }
+
+    public static void IgnoreCollision(Collider collider1, Collider collider2, bool ignore = true)
+    {
+    }
 }
 
 public struct LayerMask

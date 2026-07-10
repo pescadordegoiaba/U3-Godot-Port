@@ -420,6 +420,78 @@ public class U3RuntimeSmokeTests
     }
 
     [Fact]
+    public void Matrix4x4ExGetPositionReturnsTranslationColumn()
+    {
+        var matrix = Matrix4x4.Translate(new Vector3(5f, -2f, 9f));
+
+        AssertVector3Approx(new Vector3(5f, -2f, 9f), matrix.GetPosition());
+    }
+
+    [Fact]
+    public void Matrix4x4ExGetPositionReturnsTrsPosition()
+    {
+        var matrix = Matrix4x4.TRS(
+            new Vector3(3f, 4f, 5f),
+            Quaternion.Euler(0f, 90f, 0f),
+            new Vector3(2f, 3f, 4f));
+
+        AssertVector3Approx(new Vector3(3f, 4f, 5f), matrix.GetPosition());
+    }
+
+    [Fact]
+    public void Matrix4x4ExGetRotationExtractsSimpleRotation()
+    {
+        var matrix = Matrix4x4.Rotate(Quaternion.Euler(0f, 90f, 0f));
+
+        var rotation = matrix.GetRotation();
+
+        AssertVector3Approx(Vector3.right, rotation * Vector3.forward);
+        AssertVector3Approx(Vector3.up, rotation * Vector3.up);
+    }
+
+    [Fact]
+    public void RandomExZeroConeReturnsForward()
+    {
+        UnityEngine.Random.InitState(123);
+
+        var result = RandomEx.GetRandomForwardVectorInCone(0f);
+
+        AssertVector3Approx(Vector3.forward, result);
+    }
+
+    [Fact]
+    public void RandomExConeVectorsStayNormalizedAndFinite()
+    {
+        UnityEngine.Random.InitState(456);
+        var halfAngleRadians = 30f * Mathf.Deg2Rad;
+
+        for (var index = 0; index < 32; index++)
+        {
+            var result = RandomEx.GetRandomForwardVectorInCone(halfAngleRadians);
+
+            Assert.True(float.IsFinite(result.x), $"Expected finite x, got {result.x}");
+            Assert.True(float.IsFinite(result.y), $"Expected finite y, got {result.y}");
+            Assert.True(float.IsFinite(result.z), $"Expected finite z, got {result.z}");
+            Assert.Equal(1f, result.magnitude, 0.0001f);
+        }
+    }
+
+    [Fact]
+    public void RandomExConeVectorsStayWithinRequestedAngle()
+    {
+        UnityEngine.Random.InitState(789);
+        var halfAngleDegrees = 20f;
+        var halfAngleRadians = halfAngleDegrees * Mathf.Deg2Rad;
+
+        for (var index = 0; index < 32; index++)
+        {
+            var result = RandomEx.GetRandomForwardVectorInCone(halfAngleRadians);
+
+            Assert.InRange(Vector3.Angle(Vector3.forward, result), 0f, halfAngleDegrees + 0.001f);
+        }
+    }
+
+    [Fact]
     public void MathfExConstantsAndBasicMathWork()
     {
         Assert.Equal(Mathf.PI * 2f, MathfEx.TAU);

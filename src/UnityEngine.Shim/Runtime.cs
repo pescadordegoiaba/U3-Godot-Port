@@ -95,6 +95,11 @@ public static class RuntimeLoop
 
     private static void EnsureAwake(MonoBehaviour behaviour)
     {
+        if (behaviour.IsDestroyed || behaviour.gameObject.IsDestroyed)
+        {
+            return;
+        }
+
         if (AwakenedBehaviours.Add(behaviour))
         {
             behaviour.Awake();
@@ -103,6 +108,11 @@ public static class RuntimeLoop
 
     private static void EnsureStart(MonoBehaviour behaviour)
     {
+        if (behaviour.IsDestroyed || behaviour.gameObject.IsDestroyed)
+        {
+            return;
+        }
+
         if (StartedBehaviours.Add(behaviour))
         {
             behaviour.Start();
@@ -111,7 +121,7 @@ public static class RuntimeLoop
 
     private static bool CanRunBehaviour(MonoBehaviour behaviour)
     {
-        return behaviour.enabled && behaviour.gameObject.activeInHierarchy;
+        return !behaviour.IsDestroyed && !behaviour.gameObject.IsDestroyed && behaviour.enabled && behaviour.gameObject.activeInHierarchy;
     }
 }
 
@@ -181,5 +191,15 @@ public static class Debug
     public static void LogError(object? message)
     {
         _logger.LogError(message);
+    }
+
+    public static void LogException(Exception exception)
+    {
+        _logger.LogError(exception);
+    }
+
+    public static void LogException(Exception exception, Object context)
+    {
+        _logger.LogError(exception);
     }
 }
