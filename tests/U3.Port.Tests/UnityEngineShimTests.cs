@@ -97,6 +97,16 @@ public class UnityEngineShimTests
     }
 
     [Fact]
+    public void Vector3FoundationHelpersWork()
+    {
+        AssertVector3(new Vector3(1f, 2f, 1f), Vector3.Min(new Vector3(1f, 5f, 3f), new Vector3(4f, 2f, 1f)));
+        AssertVector3(new Vector3(4f, 5f, 3f), Vector3.Max(new Vector3(1f, 5f, 3f), new Vector3(4f, 2f, 1f)));
+        AssertVector3(new Vector3(2f, 6f, 12f), Vector3.Scale(new Vector3(1f, 2f, 3f), new Vector3(2f, 3f, 4f)));
+        Assert.Equal(2f, Vector3.ClampMagnitude(new Vector3(3f, 4f, 0f), 2f).magnitude, 0.0001f);
+        AssertVector3(new Vector3(1f, 0f, 0f), Vector3.ClampMagnitude(new Vector3(1f, 0f, 0f), 2f));
+    }
+
+    [Fact]
     public void MathfClampAndLerpWork()
     {
         Assert.Equal(5f, Mathf.Clamp(5f, 0f, 10f));
@@ -535,6 +545,148 @@ public class UnityEngineShimTests
     {
         Assert.Equal(20f, Mathf.DeltaAngle(350f, 10f));
         Assert.Equal(-20f, Mathf.DeltaAngle(10f, 350f));
+    }
+
+    [Fact]
+    public void MathfFoundationHelpersWork()
+    {
+        Assert.True(Mathf.Epsilon > 0f);
+        Assert.Equal(8f, Mathf.Pow(2f, 3f));
+        Assert.Equal(MathF.Acos(0.5f), Mathf.Acos(0.5f));
+        Assert.Equal(MathF.Asin(0.5f), Mathf.Asin(0.5f));
+        Assert.Equal(1f, Mathf.Sign(0f));
+        Assert.Equal(1f, Mathf.Sign(42f));
+        Assert.Equal(-1f, Mathf.Sign(-42f));
+    }
+
+    [Fact]
+    public void RandomRangeAndInitStateWork()
+    {
+        UnityEngine.Random.InitState(123);
+        var first = UnityEngine.Random.value;
+        var second = UnityEngine.Random.Range(0f, 10f);
+
+        UnityEngine.Random.InitState(123);
+
+        Assert.Equal(first, UnityEngine.Random.value);
+        Assert.Equal(second, UnityEngine.Random.Range(0f, 10f));
+
+        for (var index = 0; index < 32; index++)
+        {
+            var intValue = UnityEngine.Random.Range(1, 4);
+            var floatValue = UnityEngine.Random.Range(-2f, 2f);
+
+            Assert.InRange(intValue, 1, 3);
+            Assert.InRange(floatValue, -2f, 2f);
+        }
+    }
+
+    [Fact]
+    public void RandomSphereHelpersStayInRange()
+    {
+        for (var index = 0; index < 32; index++)
+        {
+            Assert.True(UnityEngine.Random.insideUnitSphere.sqrMagnitude <= 1.0001f);
+            Assert.Equal(1f, UnityEngine.Random.onUnitSphere.magnitude, 0.0001f);
+            Assert.Equal(1f, (UnityEngine.Random.rotation * Vector3.forward).magnitude, 0.0001f);
+        }
+    }
+
+    [Fact]
+    public void BoundsContainsIntersectsAndEncapsulates()
+    {
+        var bounds = new Bounds(Vector3.zero, new Vector3(2f, 2f, 2f));
+
+        Assert.True(bounds.Contains(new Vector3(0.5f, 0f, -0.5f)));
+        Assert.False(bounds.Contains(new Vector3(2f, 0f, 0f)));
+        Assert.True(bounds.Intersects(new Bounds(new Vector3(1.5f, 0f, 0f), Vector3.one)));
+        Assert.False(bounds.Intersects(new Bounds(new Vector3(4f, 0f, 0f), Vector3.one)));
+
+        bounds.Encapsulate(new Vector3(3f, 0f, 0f));
+
+        Assert.True(bounds.Contains(new Vector3(3f, 0f, 0f)));
+        AssertVector3Approx(new Vector3(3f, 1f, 1f), bounds.max);
+    }
+
+    [Fact]
+    public void BoundsClosestPointExpandAndSetMinMaxWork()
+    {
+        var bounds = new Bounds(Vector3.zero, new Vector3(2f, 2f, 2f));
+
+        AssertVector3Approx(new Vector3(1f, -1f, 0.5f), bounds.ClosestPoint(new Vector3(5f, -5f, 0.5f)));
+
+        bounds.Expand(2f);
+
+        AssertVector3Approx(new Vector3(4f, 4f, 4f), bounds.size);
+
+        bounds.SetMinMax(new Vector3(-2f, -4f, -6f), new Vector3(2f, 4f, 6f));
+
+        AssertVector3Approx(Vector3.zero, bounds.center);
+        AssertVector3Approx(new Vector3(4f, 8f, 12f), bounds.size);
+    }
+
+    [Fact]
+    public void RayAndPlaneHelpersWork()
+    {
+        var ray = new Ray(new Vector3(1f, 2f, 3f), Vector3.forward);
+        var plane = new Plane(Vector3.forward, new Vector3(0f, 0f, 10f));
+
+        AssertVector3Approx(new Vector3(1f, 2f, 8f), ray.GetPoint(5f));
+        Assert.Equal(-7f, plane.GetDistanceToPoint(ray.origin), 0.0001f);
+        Assert.False(plane.GetSide(ray.origin));
+        Assert.True(plane.Raycast(ray, out var enter));
+        Assert.Equal(7f, enter, 0.0001f);
+    }
+
+    [Fact]
+    public void LayerMaskConversionsAndStubsWork()
+    {
+        LayerMask mask = 7;
+        int value = mask;
+
+        Assert.Equal(7, value);
+        Assert.Equal(0, LayerMask.GetMask("Default"));
+        Assert.Equal(-1, LayerMask.NameToLayer("Default"));
+        Assert.Equal(string.Empty, LayerMask.LayerToName(0));
+    }
+
+    [Fact]
+    public void Matrix4x4TranslateScaleAndTrsWork()
+    {
+        var point = new Vector3(1f, 2f, 3f);
+
+        AssertVector3Approx(new Vector3(6f, 1f, 5f), Matrix4x4.Translate(new Vector3(5f, -1f, 2f)).MultiplyPoint(point));
+        AssertVector3Approx(new Vector3(2f, 6f, 12f), Matrix4x4.Scale(new Vector3(2f, 3f, 4f)).MultiplyPoint(point));
+        AssertVector3Approx(new Vector3(0f, 0f, 4f), Matrix4x4.Scale(new Vector3(2f, 3f, 4f)).MultiplyVector(Vector3.forward));
+        AssertVector3Approx(Vector3.right, Matrix4x4.Rotate(Quaternion.Euler(0f, 90f, 0f)).MultiplyPoint3x4(Vector3.forward));
+
+        var trs = Matrix4x4.TRS(new Vector3(10f, 0f, 0f), Quaternion.Euler(0f, 90f, 0f), new Vector3(2f, 2f, 2f));
+
+        AssertVector3Approx(new Vector3(12f, 0f, 0f), trs.MultiplyPoint(Vector3.forward));
+        Assert.Equal(1f, Matrix4x4.identity[0, 0]);
+        Assert.Equal(0f, Matrix4x4.zero[0, 0]);
+    }
+
+    [Fact]
+    public void RaycastHitReturnsColliderRelations()
+    {
+        var gameObject = new GameObject("hit");
+        var collider = gameObject.AddComponent<Collider>();
+        var rigidbody = gameObject.AddComponent<Rigidbody>();
+        var hit = new RaycastHit
+        {
+            point = Vector3.one,
+            normal = Vector3.up,
+            distance = 3f,
+            collider = collider
+        };
+
+        Assert.Same(collider, hit.collider);
+        Assert.Same(gameObject.transform, hit.transform);
+        Assert.Same(rigidbody, hit.rigidbody);
+        AssertVector3(Vector3.one, hit.point);
+        AssertVector3(Vector3.up, hit.normal);
+        Assert.Equal(3f, hit.distance);
     }
 
     [Fact]

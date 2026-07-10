@@ -263,6 +263,41 @@ public struct Vector3
             from.y + ((to.y - from.y) * clampedT),
             from.z + ((to.z - from.z) * clampedT));
     }
+
+    public static Vector3 Min(Vector3 left, Vector3 right)
+    {
+        return new Vector3(
+            MathF.Min(left.x, right.x),
+            MathF.Min(left.y, right.y),
+            MathF.Min(left.z, right.z));
+    }
+
+    public static Vector3 Max(Vector3 left, Vector3 right)
+    {
+        return new Vector3(
+            MathF.Max(left.x, right.x),
+            MathF.Max(left.y, right.y),
+            MathF.Max(left.z, right.z));
+    }
+
+    public static Vector3 Scale(Vector3 left, Vector3 right)
+    {
+        return new Vector3(left.x * right.x, left.y * right.y, left.z * right.z);
+    }
+
+    public static Vector3 ClampMagnitude(Vector3 vector, float maxLength)
+    {
+        if (maxLength <= 0f)
+        {
+            return zero;
+        }
+
+        var sqrMagnitude = vector.sqrMagnitude;
+        var maxSqrMagnitude = maxLength * maxLength;
+        return sqrMagnitude > maxSqrMagnitude
+            ? vector.normalized * maxLength
+            : vector;
+    }
 }
 
 public struct Quaternion
@@ -565,6 +600,7 @@ public struct Color32
 
 public static class Mathf
 {
+    public const float Epsilon = 1.401298E-45f;
     public const float PI = MathF.PI;
     public const float Deg2Rad = PI / 180f;
     public const float Rad2Deg = 180f / PI;
@@ -649,6 +685,26 @@ public static class Mathf
     public static float Atan2(float y, float x)
     {
         return MathF.Atan2(y, x);
+    }
+
+    public static float Acos(float value)
+    {
+        return MathF.Acos(value);
+    }
+
+    public static float Asin(float value)
+    {
+        return MathF.Asin(value);
+    }
+
+    public static float Pow(float value, float power)
+    {
+        return MathF.Pow(value, power);
+    }
+
+    public static float Sign(float value)
+    {
+        return value >= 0f ? 1f : -1f;
     }
 
     public static bool Approximately(float left, float right)
