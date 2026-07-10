@@ -283,6 +283,17 @@ public class GameObject : Object
         if (component is Collider collider)
         {
             collider.attachedRigidbody = GetComponent<Rigidbody>();
+            Physics.RegisterCollider(collider);
+        }
+
+        if (component is Rigidbody rigidbody)
+        {
+            rigidbody.position = transform.position;
+            rigidbody.rotation = transform.rotation;
+            foreach (var existingCollider in GetComponents<Collider>())
+            {
+                existingCollider.attachedRigidbody = rigidbody;
+            }
         }
 
         if (component is MonoBehaviour monoBehaviour)
@@ -311,6 +322,19 @@ public class GameObject : Object
         {
             Camera.ClearMainIfSame(camera);
         }
+
+        if (component is Collider collider)
+        {
+            Physics.UnregisterCollider(collider);
+        }
+
+        if (component is Rigidbody)
+        {
+            foreach (var existingCollider in GetComponents<Collider>())
+            {
+                existingCollider.attachedRigidbody = null;
+            }
+        }
     }
 
     internal void DestroyInternal()
@@ -338,6 +362,11 @@ public class GameObject : Object
             if (component is Camera camera)
             {
                 Camera.ClearMainIfSame(camera);
+            }
+
+            if (component is Collider collider)
+            {
+                Physics.UnregisterCollider(collider);
             }
         }
 

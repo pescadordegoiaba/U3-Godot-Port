@@ -86,6 +86,8 @@ public static class RuntimeLoop
         Time.time = 0f;
         Time.frameCount = 0;
         GameObject.ResetRegistryForTests();
+        Physics.ResetForTests();
+        Input.ResetBackend();
     }
 
     private static MonoBehaviour[] SnapshotBehaviours()

@@ -10,6 +10,9 @@ public sealed class GodotSceneBridge
     private readonly Dictionary<GameObject, MeshInstance3D> _meshInstancesByGameObject = new();
     private readonly Dictionary<GameObject, Camera3D> _camerasByGameObject = new();
     private readonly Dictionary<GameObject, Light3D> _lightsByGameObject = new();
+    private readonly Dictionary<Collider, CollisionObject3D> _collisionObjectsByCollider = new();
+    private readonly Dictionary<Collider, CollisionShape3D> _collisionShapesByCollider = new();
+    private readonly Dictionary<CollisionObject3D, Collider> _collidersByCollisionObject = new();
     private readonly Dictionary<UnityEngine.Mesh, Godot.Mesh> _meshResourcesByUnityMesh = new();
     private readonly Dictionary<UnityEngine.Material, MaterialCacheEntry> _materialResourcesByUnityMaterial = new();
     private readonly HashSet<GameObject> _warnedMissingParentNodes = new();
@@ -62,6 +65,7 @@ public sealed class GodotSceneBridge
             SyncMesh(pair.Key, pair.Value);
             SyncCamera(pair.Key, pair.Value);
             SyncLight(pair.Key, pair.Value);
+            SyncCollider(pair.Key, pair.Value);
         }
     }
 
@@ -77,6 +81,9 @@ public sealed class GodotSceneBridge
         _meshInstancesByGameObject.Clear();
         _camerasByGameObject.Clear();
         _lightsByGameObject.Clear();
+        _collisionObjectsByCollider.Clear();
+        _collisionShapesByCollider.Clear();
+        _collidersByCollisionObject.Clear();
         _meshResourcesByUnityMesh.Clear();
         _materialResourcesByUnityMaterial.Clear();
         _warnedMissingParentNodes.Clear();
@@ -259,6 +266,146 @@ public sealed class GodotSceneBridge
         return lightNode;
     }
 
+    public bool TryGetUnityCollider(CollisionObject3D collisionObject, out Collider? collider)
+    {
+        return _collidersByCollisionObject.TryGetValue(collisionObject, out collider);
+    }
+
+    private void SyncCollider(GameObject gameObject, Node3D node)
+    {
+        var collider = gameObject.GetComponent<Collider>();
+        if (collider is null)
+        {
+            return;
+        }
+
+        var collisionObject = GetOrCreateCollisionObject(gameObject, node, collider);
+        var shapeNode = GetOrCreateCollisionShape(collider, collisionObject);
+
+        collisionObject.Position = ToGodot(GetColliderLocalCenter(collider));
+        collisionObject.CollisionLayer = ToGodotLayer(gameObject.layer);
+        collisionObject.CollisionMask = uint.MaxValue;
+        shapeNode.Disabled = !gameObject.activeInHierarchy || !collider.enabled;
+        shapeNode.Shape = CreateOrUpdateShape(collider, shapeNode.Shape);
+    }
+
+    private CollisionObject3D GetOrCreateCollisionObject(GameObject gameObject, Node3D node, Collider collider)
+    {
+        if (_collisionObjectsByCollider.TryGetValue(collider, out var existingObject))
+        {
+            if (!MatchesCollisionObject(existingObject, collider))
+            {
+                _collidersByCollisionObject.Remove(existingObject);
+                existingObject.QueueFree();
+                _collisionObjectsByCollider.Remove(collider);
+                _collisionShapesByCollider.Remove(collider);
+            }
+            else
+            {
+                if (!ReferenceEquals(existingObject.GetParent(), node))
+                {
+                    existingObject.Reparent(node, keepGlobalTransform: false);
+                }
+
+                return existingObject;
+            }
+        }
+
+        var collisionObject = CreateCollisionObject(gameObject, collider);
+        node.AddChild(collisionObject);
+        _collisionObjectsByCollider[collider] = collisionObject;
+        _collidersByCollisionObject[collisionObject] = collider;
+        return collisionObject;
+    }
+
+    private static bool MatchesCollisionObject(CollisionObject3D collisionObject, Collider collider)
+    {
+        if (collider.isTrigger)
+        {
+            return collisionObject is Area3D;
+        }
+
+        if (collider.attachedRigidbody is not null)
+        {
+            return collisionObject is AnimatableBody3D;
+        }
+
+        return collisionObject is StaticBody3D;
+    }
+
+    private static CollisionObject3D CreateCollisionObject(GameObject gameObject, Collider collider)
+    {
+        CollisionObject3D collisionObject = collider.isTrigger
+            ? new Area3D()
+            : collider.attachedRigidbody is not null
+                ? new AnimatableBody3D()
+                : new StaticBody3D();
+
+        collisionObject.Name = $"{gameObject.name}Collision";
+        return collisionObject;
+    }
+
+    private CollisionShape3D GetOrCreateCollisionShape(Collider collider, CollisionObject3D collisionObject)
+    {
+        if (_collisionShapesByCollider.TryGetValue(collider, out var shapeNode))
+        {
+            if (!ReferenceEquals(shapeNode.GetParent(), collisionObject))
+            {
+                shapeNode.Reparent(collisionObject, keepGlobalTransform: false);
+            }
+
+            return shapeNode;
+        }
+
+        shapeNode = new CollisionShape3D
+        {
+            Name = $"{collisionObject.Name}Shape"
+        };
+        collisionObject.AddChild(shapeNode);
+        _collisionShapesByCollider[collider] = shapeNode;
+        return shapeNode;
+    }
+
+    private static Shape3D CreateOrUpdateShape(Collider collider, Shape3D? currentShape)
+    {
+        switch (collider)
+        {
+            case BoxCollider boxCollider:
+                var boxShape = currentShape as BoxShape3D ?? new BoxShape3D();
+                boxShape.Size = ToGodot(boxCollider.size);
+                return boxShape;
+            case SphereCollider sphereCollider:
+                var sphereShape = currentShape as SphereShape3D ?? new SphereShape3D();
+                sphereShape.Radius = UnityEngine.Mathf.Abs(sphereCollider.radius);
+                return sphereShape;
+            case CapsuleCollider capsuleCollider:
+                var capsuleShape = currentShape as CapsuleShape3D ?? new CapsuleShape3D();
+                capsuleShape.Radius = UnityEngine.Mathf.Abs(capsuleCollider.radius);
+                capsuleShape.Height = UnityEngine.Mathf.Max(UnityEngine.Mathf.Abs(capsuleCollider.height), capsuleShape.Radius * 2f);
+                return capsuleShape;
+            default:
+                var fallbackShape = currentShape as BoxShape3D ?? new BoxShape3D();
+                fallbackShape.Size = ToGodot(collider.bounds.size);
+                return fallbackShape;
+        }
+    }
+
+    private static UnityEngine.Vector3 GetColliderLocalCenter(Collider collider)
+    {
+        return collider switch
+        {
+            BoxCollider boxCollider => boxCollider.center,
+            SphereCollider sphereCollider => sphereCollider.center,
+            CapsuleCollider capsuleCollider => capsuleCollider.center,
+            _ => UnityEngine.Vector3.zero
+        };
+    }
+
+    private static uint ToGodotLayer(int layer)
+    {
+        return layer is >= 0 and < 32 ? 1u << layer : 1u;
+    }
+
     private static bool MatchesLightType(Light3D lightNode, LightType lightType)
     {
         return lightType switch
@@ -322,9 +469,14 @@ public sealed class GodotSceneBridge
         return entry.Material;
     }
 
-    private static Godot.Vector3 ToGodot(UnityEngine.Vector3 value)
+    internal static Godot.Vector3 ToGodot(UnityEngine.Vector3 value)
     {
         return new Godot.Vector3(value.x, value.y, value.z);
+    }
+
+    internal static UnityEngine.Vector3 ToUnity(Godot.Vector3 value)
+    {
+        return new UnityEngine.Vector3(value.X, value.Y, value.Z);
     }
 
     private static Godot.Color ToGodot(UnityEngine.Color value)

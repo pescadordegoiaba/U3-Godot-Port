@@ -18,3 +18,42 @@ config/icon="res://icon.svg"
 [dotnet]
 
 project/assembly_name="U3GodotPort.Godot"
+
+[input]
+
+move_forward={
+"deadzone": 0.5,
+"events": []
+}
+move_back={
+"deadzone": 0.5,
+"events": []
+}
+move_left={
+"deadzone": 0.5,
+"events": []
+}
+move_right={
+"deadzone": 0.5,
+"events": []
+}
+jump={
+"deadzone": 0.5,
+"events": []
+}
+sprint={
+"deadzone": 0.5,
+"events": []
+}
+interact={
+"deadzone": 0.5,
+"events": []
+}
+fire={
+"deadzone": 0.5,
+"events": []
+}
+aim={
+"deadzone": 0.5,
+"events": []
+}

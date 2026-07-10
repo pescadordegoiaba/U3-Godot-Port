@@ -58,6 +58,8 @@ public sealed class GodotRuntimeBootstrap
 
         RuntimeLoop.Reset();
         Debug.ResetLogger();
+        Physics.ResetBackend();
+        Input.ResetBackend();
         HostObject = null;
         _behaviour = null;
         _initialized = false;

@@ -109,7 +109,24 @@ public struct RaycastHit
 
     public readonly Transform? transform => collider?.transform;
 
-    public readonly Rigidbody? rigidbody => collider?.gameObject.GetComponent<Rigidbody>();
+    public readonly Rigidbody? rigidbody => collider?.attachedRigidbody ?? collider?.gameObject.GetComponent<Rigidbody>();
+}
+
+public interface IPhysicsBackend
+{
+    bool Raycast(Ray ray, out RaycastHit hitInfo, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+
+    RaycastHit[] RaycastAll(Ray ray, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+
+    Collider[] OverlapSphere(Vector3 position, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+
+    int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+
+    int OverlapBoxNonAlloc(Vector3 center, Vector3 halfExtents, Collider[] results, Quaternion orientation, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+
+    int OverlapCapsuleNonAlloc(Vector3 point0, Vector3 point1, float radius, Collider[] results, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+
+    bool CheckSphere(Vector3 position, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
 }
 
 public enum QueryTriggerInteraction
@@ -152,11 +169,17 @@ public enum RigidbodyConstraints
 
 public class Collider : Component
 {
+    private Bounds _bounds = new(Vector3.zero, Vector3.zero);
+
     public bool enabled { get; set; } = true;
 
     public bool isTrigger { get; set; }
 
-    public Bounds bounds { get; set; } = new(Vector3.zero, Vector3.zero);
+    public virtual Bounds bounds
+    {
+        get => _bounds;
+        set => _bounds = value;
+    }
 
     public Rigidbody? attachedRigidbody { get; internal set; }
 
@@ -167,8 +190,7 @@ public class Collider : Component
 
     public virtual bool Raycast(Ray ray, out RaycastHit hitInfo, float maxDistance)
     {
-        hitInfo = default;
-        return false;
+        return Physics.RaycastColliderBounds(this, ray, out hitInfo, maxDistance);
     }
 }
 
@@ -177,6 +199,26 @@ public class BoxCollider : Collider
     public Vector3 center { get; set; }
 
     public Vector3 size { get; set; } = Vector3.one;
+
+    public override Bounds bounds
+    {
+        get => new(transform.TransformPoint(center), AbsVector(Vector3.Scale(size, transform.localScale)));
+        set
+        {
+            center = transform.InverseTransformPoint(value.center);
+            size = value.size;
+        }
+    }
+
+    public override Vector3 ClosestPoint(Vector3 position)
+    {
+        return bounds.ClosestPoint(position);
+    }
+
+    private static Vector3 AbsVector(Vector3 value)
+    {
+        return new Vector3(Mathf.Abs(value.x), Mathf.Abs(value.y), Mathf.Abs(value.z));
+    }
 }
 
 public class SphereCollider : Collider
@@ -184,6 +226,35 @@ public class SphereCollider : Collider
     public Vector3 center { get; set; }
 
     public float radius { get; set; } = 0.5f;
+
+    public override Bounds bounds
+    {
+        get
+        {
+            var scale = transform.localScale;
+            var maxScale = Mathf.Max(Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y)), Mathf.Abs(scale.z));
+            var scaledRadius = Mathf.Abs(radius) * maxScale;
+            return new Bounds(transform.TransformPoint(center), Vector3.one * (scaledRadius * 2f));
+        }
+        set
+        {
+            center = transform.InverseTransformPoint(value.center);
+            radius = Mathf.Max(Mathf.Max(value.extents.x, value.extents.y), value.extents.z);
+        }
+    }
+
+    public override Vector3 ClosestPoint(Vector3 position)
+    {
+        var worldCenter = transform.TransformPoint(center);
+        var direction = position - worldCenter;
+        if (direction.sqrMagnitude < 1E-06f)
+        {
+            return worldCenter;
+        }
+
+        var scaledRadius = bounds.extents.x;
+        return worldCenter + (direction.normalized * scaledRadius);
+    }
 }
 
 public class CapsuleCollider : Collider
@@ -195,6 +266,42 @@ public class CapsuleCollider : Collider
     public float height { get; set; } = 2f;
 
     public int direction { get; set; } = 1;
+
+    public override Bounds bounds
+    {
+        get
+        {
+            var size = Vector3.one * (Mathf.Abs(radius) * 2f);
+            var heightAxis = Mathf.Max(Mathf.Abs(height), Mathf.Abs(radius) * 2f);
+            switch (direction)
+            {
+                case 0:
+                    size.x = heightAxis;
+                    break;
+                case 2:
+                    size.z = heightAxis;
+                    break;
+                default:
+                    size.y = heightAxis;
+                    break;
+            }
+
+            var scale = transform.localScale;
+            size = new Vector3(Mathf.Abs(size.x * scale.x), Mathf.Abs(size.y * scale.y), Mathf.Abs(size.z * scale.z));
+            return new Bounds(transform.TransformPoint(center), size);
+        }
+        set
+        {
+            center = transform.InverseTransformPoint(value.center);
+            radius = Mathf.Min(value.extents.x, value.extents.z);
+            height = value.size.y;
+        }
+    }
+
+    public override Vector3 ClosestPoint(Vector3 position)
+    {
+        return bounds.ClosestPoint(position);
+    }
 }
 
 public class Rigidbody : Component
@@ -240,74 +347,311 @@ public class Rigidbody : Component
 
 public static class Physics
 {
+    private static readonly List<Collider> Colliders = new();
+    private static IPhysicsBackend? _backend;
+
     public static Vector3 gravity { get; set; } = new(0f, -9.81f, 0f);
+
+    public static IEnumerable<Collider> AllColliders => Colliders.Where(IsUsableCollider);
+
+    public static void SetBackend(IPhysicsBackend backend)
+    {
+        _backend = backend;
+    }
+
+    public static void ResetBackend()
+    {
+        _backend = null;
+    }
+
+    internal static void ResetForTests()
+    {
+        _backend = null;
+        Colliders.Clear();
+    }
+
+    internal static void RegisterCollider(Collider collider)
+    {
+        if (!Colliders.Contains(collider))
+        {
+            Colliders.Add(collider);
+        }
+    }
+
+    internal static void UnregisterCollider(Collider collider)
+    {
+        Colliders.Remove(collider);
+    }
 
     public static bool Raycast(Ray ray)
     {
-        return false;
+        return Raycast(ray, out _, float.PositiveInfinity, ~0, QueryTriggerInteraction.UseGlobal);
     }
 
     public static bool Raycast(Ray ray, float maxDistance)
     {
-        return false;
+        return Raycast(ray, out _, maxDistance, ~0, QueryTriggerInteraction.UseGlobal);
     }
 
     public static bool Raycast(Ray ray, out RaycastHit hitInfo)
     {
-        hitInfo = default;
-        return false;
+        return Raycast(ray, out hitInfo, float.PositiveInfinity, ~0, QueryTriggerInteraction.UseGlobal);
     }
 
     public static bool Raycast(Ray ray, out RaycastHit hitInfo, float maxDistance)
     {
-        hitInfo = default;
-        return false;
+        return Raycast(ray, out hitInfo, maxDistance, ~0, QueryTriggerInteraction.UseGlobal);
     }
 
     public static bool Raycast(Ray ray, out RaycastHit hitInfo, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
     {
-        hitInfo = default;
-        return false;
+        if (_backend is not null)
+        {
+            return _backend.Raycast(ray, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
+        }
+
+        return RaycastRegisteredColliders(ray, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
+    }
+
+    public static bool Raycast(Vector3 origin, Vector3 direction)
+    {
+        return Raycast(new Ray(origin, direction));
+    }
+
+    public static bool Raycast(Vector3 origin, Vector3 direction, float maxDistance)
+    {
+        return Raycast(new Ray(origin, direction), maxDistance);
+    }
+
+    public static bool Raycast(Vector3 origin, Vector3 direction, out RaycastHit hitInfo)
+    {
+        return Raycast(new Ray(origin, direction), out hitInfo);
     }
 
     public static bool Raycast(Vector3 origin, Vector3 direction, out RaycastHit hitInfo, float maxDistance, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
     {
-        hitInfo = default;
-        return false;
+        return Raycast(new Ray(origin, direction), out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
     }
 
     public static RaycastHit[] RaycastAll(Ray ray, float maxDistance = float.PositiveInfinity, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
     {
-        return Array.Empty<RaycastHit>();
+        if (_backend is not null)
+        {
+            return _backend.RaycastAll(ray, maxDistance, layerMask, queryTriggerInteraction);
+        }
+
+        var hits = new List<RaycastHit>();
+        foreach (var collider in AllColliders)
+        {
+            if (ColliderMatches(collider, layerMask, queryTriggerInteraction) && RaycastColliderBounds(collider, ray, out var hit, maxDistance))
+            {
+                hits.Add(hit);
+            }
+        }
+
+        return hits.OrderBy(hit => hit.distance).ToArray();
     }
 
     public static Collider[] OverlapSphere(Vector3 position, float radius, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
     {
-        return Array.Empty<Collider>();
+        if (_backend is not null)
+        {
+            return _backend.OverlapSphere(position, radius, layerMask, queryTriggerInteraction);
+        }
+
+        return AllColliders
+            .Where(collider => ColliderMatches(collider, layerMask, queryTriggerInteraction))
+            .Where(collider => Vector3.Distance(collider.bounds.ClosestPoint(position), position) <= radius)
+            .ToArray();
     }
 
     public static int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
     {
-        return 0;
+        if (_backend is not null)
+        {
+            return _backend.OverlapSphereNonAlloc(position, radius, results, layerMask, queryTriggerInteraction);
+        }
+
+        return CopyResults(OverlapSphere(position, radius, layerMask, queryTriggerInteraction), results);
     }
 
     public static int OverlapBoxNonAlloc(Vector3 center, Vector3 halfExtents, Collider[] results, Quaternion orientation, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
     {
-        return 0;
+        if (_backend is not null)
+        {
+            return _backend.OverlapBoxNonAlloc(center, halfExtents, results, orientation, layerMask, queryTriggerInteraction);
+        }
+
+        var bounds = new Bounds(center, halfExtents * 2f);
+        var hits = AllColliders
+            .Where(collider => ColliderMatches(collider, layerMask, queryTriggerInteraction))
+            .Where(collider => collider.bounds.Intersects(bounds))
+            .ToArray();
+        return CopyResults(hits, results);
     }
 
     public static int OverlapCapsuleNonAlloc(Vector3 point0, Vector3 point1, float radius, Collider[] results, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
     {
-        return 0;
+        if (_backend is not null)
+        {
+            return _backend.OverlapCapsuleNonAlloc(point0, point1, radius, results, layerMask, queryTriggerInteraction);
+        }
+
+        var bounds = new Bounds((point0 + point1) * 0.5f, Vector3.zero);
+        bounds.Encapsulate(point0);
+        bounds.Encapsulate(point1);
+        bounds.Expand(radius * 2f);
+        var hits = AllColliders
+            .Where(collider => ColliderMatches(collider, layerMask, queryTriggerInteraction))
+            .Where(collider => collider.bounds.Intersects(bounds))
+            .ToArray();
+        return CopyResults(hits, results);
     }
 
     public static bool CheckSphere(Vector3 position, float radius, int layerMask = ~0, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
     {
-        return false;
+        if (_backend is not null)
+        {
+            return _backend.CheckSphere(position, radius, layerMask, queryTriggerInteraction);
+        }
+
+        return OverlapSphere(position, radius, layerMask, queryTriggerInteraction).Length > 0;
     }
 
     public static void IgnoreCollision(Collider collider1, Collider collider2, bool ignore = true)
     {
+    }
+
+    internal static bool RaycastColliderBounds(Collider collider, Ray ray, out RaycastHit hitInfo, float maxDistance)
+    {
+        hitInfo = default;
+        if (!IsUsableCollider(collider))
+        {
+            return false;
+        }
+
+        var bounds = collider.bounds;
+        if (!RayIntersectsBounds(ray, bounds, maxDistance, out var distance))
+        {
+            return false;
+        }
+
+        var point = ray.GetPoint(distance);
+        hitInfo = new RaycastHit
+        {
+            collider = collider,
+            distance = distance,
+            point = point,
+            normal = EstimateBoundsNormal(bounds, point)
+        };
+        return true;
+    }
+
+    private static bool RaycastRegisteredColliders(Ray ray, out RaycastHit hitInfo, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction)
+    {
+        hitInfo = default;
+        var bestDistance = float.PositiveInfinity;
+        var found = false;
+
+        foreach (var collider in AllColliders)
+        {
+            if (!ColliderMatches(collider, layerMask, queryTriggerInteraction))
+            {
+                continue;
+            }
+
+            if (RaycastColliderBounds(collider, ray, out var candidate, maxDistance) && candidate.distance < bestDistance)
+            {
+                bestDistance = candidate.distance;
+                hitInfo = candidate;
+                found = true;
+            }
+        }
+
+        return found;
+    }
+
+    private static bool IsUsableCollider(Collider collider)
+    {
+        return !collider.IsDestroyed && !collider.gameObject.IsDestroyed && collider.enabled && collider.gameObject.activeInHierarchy;
+    }
+
+    private static bool ColliderMatches(Collider collider, int layerMask, QueryTriggerInteraction queryTriggerInteraction)
+    {
+        if (!IsUsableCollider(collider))
+        {
+            return false;
+        }
+
+        if (((1 << collider.gameObject.layer) & layerMask) == 0)
+        {
+            return false;
+        }
+
+        return queryTriggerInteraction != QueryTriggerInteraction.Ignore || !collider.isTrigger;
+    }
+
+    private static int CopyResults(Collider[] source, Collider[] results)
+    {
+        var count = Math.Min(source.Length, results.Length);
+        Array.Copy(source, results, count);
+        return count;
+    }
+
+    private static bool RayIntersectsBounds(Ray ray, Bounds bounds, float maxDistance, out float distance)
+    {
+        distance = 0f;
+        var min = bounds.min;
+        var max = bounds.max;
+        var tMin = 0f;
+        var tMax = maxDistance;
+
+        if (!Slab(ray.origin.x, ray.direction.x, min.x, max.x, ref tMin, ref tMax)
+            || !Slab(ray.origin.y, ray.direction.y, min.y, max.y, ref tMin, ref tMax)
+            || !Slab(ray.origin.z, ray.direction.z, min.z, max.z, ref tMin, ref tMax))
+        {
+            return false;
+        }
+
+        distance = tMin;
+        return distance <= maxDistance;
+    }
+
+    private static bool Slab(float origin, float direction, float min, float max, ref float tMin, ref float tMax)
+    {
+        if (Mathf.Abs(direction) < 1E-06f)
+        {
+            return origin >= min && origin <= max;
+        }
+
+        var inverse = 1f / direction;
+        var t1 = (min - origin) * inverse;
+        var t2 = (max - origin) * inverse;
+        if (t1 > t2)
+        {
+            (t1, t2) = (t2, t1);
+        }
+
+        tMin = Mathf.Max(tMin, t1);
+        tMax = Mathf.Min(tMax, t2);
+        return tMin <= tMax;
+    }
+
+    private static Vector3 EstimateBoundsNormal(Bounds bounds, Vector3 point)
+    {
+        var min = bounds.min;
+        var max = bounds.max;
+        var distances = new[]
+        {
+            (Mathf.Abs(point.x - min.x), Vector3.left),
+            (Mathf.Abs(point.x - max.x), Vector3.right),
+            (Mathf.Abs(point.y - min.y), Vector3.down),
+            (Mathf.Abs(point.y - max.y), Vector3.up),
+            (Mathf.Abs(point.z - min.z), Vector3.back),
+            (Mathf.Abs(point.z - max.z), Vector3.forward)
+        };
+
+        return distances.OrderBy(pair => pair.Item1).First().Item2;
     }
 }
 
