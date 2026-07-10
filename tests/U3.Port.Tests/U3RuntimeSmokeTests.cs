@@ -364,6 +364,14 @@ public class U3RuntimeSmokeTests
     }
 
     [Fact]
+    public void Vector2ExCrossReturnsPerpendicularVector()
+    {
+        AssertVector2Approx(new Vector2(0f, -1f), new Vector2(1f, 0f).Cross());
+        AssertVector2Approx(new Vector2(1f, 0f), new Vector2(0f, 1f).Cross());
+        AssertVector2Approx(new Vector2(4f, -3f), new Vector2(3f, 4f).Cross());
+    }
+
+    [Fact]
     public void MathfExConstantsAndBasicMathWork()
     {
         Assert.Equal(Mathf.PI * 2f, MathfEx.TAU);
