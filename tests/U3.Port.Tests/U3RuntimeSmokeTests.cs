@@ -557,6 +557,25 @@ public class U3RuntimeSmokeTests
     }
 
     [Fact]
+    public void ComponentExGetSceneHierarchyPathUsesTransformHierarchy()
+    {
+        var root = new GameObject("root");
+        var child = new GameObject("child");
+        child.transform.SetParent(root.transform);
+        var component = child.AddComponent<TransformExTestComponent>();
+
+        Assert.Equal("root/child", component.GetSceneHierarchyPath());
+    }
+
+    [Fact]
+    public void ComponentExGetSceneHierarchyPathHandlesNullComponent()
+    {
+        Component? component = null;
+
+        Assert.Null(ComponentExtension.GetSceneHierarchyPath(component!));
+    }
+
+    [Fact]
     public void TransformExRoundingAndRotationHelpersWork()
     {
         var gameObject = new GameObject("rotation");
